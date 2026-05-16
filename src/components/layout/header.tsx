@@ -34,7 +34,6 @@ export function Header() {
             </Link>
           ))}
         </nav>
-
         <HeaderAuth />
       </div>
     </header>
