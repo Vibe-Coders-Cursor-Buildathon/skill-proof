@@ -27,31 +27,34 @@ const STEPS = [
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="py-16 md:py-24">
-      <div className="mx-auto max-w-5xl px-4">
+    <section id="how-it-works" className="pb-20 md:pb-28">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary">
             How it works
+          </p>
+          <h2 className="mt-3 text-3xl font-bold sm:text-4xl md:text-[2.5rem]">
+            Four steps to your certificate
           </h2>
-          <p className="mt-3 text-muted-foreground">
-            From content to certificate in four simple steps.
+          <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+            From content to certificate in under a minute.
           </p>
         </div>
 
-        <ol className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((item, index) => (
             <li key={item.step} className="relative">
               {index < STEPS.length - 1 && (
                 <span
                   aria-hidden
-                  className="absolute top-8 left-[calc(50%+2rem)] hidden h-px w-[calc(100%-4rem)] bg-border lg:block"
+                  className="absolute top-10 left-[calc(50%+2.5rem)] hidden h-px w-[calc(100%-5rem)] bg-gradient-to-r from-indigo-200 to-violet-200 lg:block"
                 />
               )}
-              <div className="flex flex-col gap-3 rounded-2xl border bg-card p-5 shadow-sm">
-                <span className="text-3xl font-bold text-primary/20">
+              <div className="flex h-full flex-col gap-4 rounded-3xl border border-white/80 bg-white/60 p-6 shadow-sm backdrop-blur-sm transition-all duration-300 hover:bg-white/90 hover:shadow-md">
+                <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-sm font-bold text-white shadow-md shadow-indigo-500/25">
                   {item.step}
                 </span>
-                <h3 className="font-semibold">{item.title}</h3>
+                <h3 className="text-lg font-semibold">{item.title}</h3>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   {item.description}
                 </p>

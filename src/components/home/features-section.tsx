@@ -7,90 +7,92 @@ import {
   Share2,
 } from "lucide-react";
 
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
 const FEATURES = [
   {
     icon: Layers,
     title: "Structured micro-courses",
     description:
       "Summary, key concepts, flashcards, and quizzes — generated from any source in one pass.",
-    color: "text-indigo-600 bg-indigo-50",
+    gradient: "from-indigo-500 to-violet-500",
+    bg: "bg-indigo-50",
   },
   {
     icon: RefreshCw,
     title: "Adaptive quiz engine",
     description:
-      "Difficulty adjusts in real time. Easier questions when you struggle, harder when you ace it.",
-    color: "text-violet-600 bg-violet-50",
+      "Difficulty adjusts in real time. Easier when you struggle, harder when you ace it.",
+    gradient: "from-violet-500 to-purple-500",
+    bg: "bg-violet-50",
   },
   {
     icon: MessageCircle,
     title: "AI Study Coach",
     description:
       "Ask anything about the course. Gemini answers using your full course as context.",
-    color: "text-sky-600 bg-sky-50",
+    gradient: "from-sky-500 to-blue-500",
+    bg: "bg-sky-50",
   },
   {
     icon: Brain,
     title: "Knowledge gap report",
     description:
       "Missed a concept? Get a targeted mini-lesson on exactly what you need to review.",
-    color: "text-emerald-600 bg-emerald-50",
+    gradient: "from-emerald-500 to-teal-500",
+    bg: "bg-emerald-50",
   },
   {
     icon: Award,
     title: "Verified certificate",
     description:
       "Score 70%+ to unlock a downloadable PNG certificate with your name on it.",
-    color: "text-amber-600 bg-amber-50",
+    gradient: "from-amber-500 to-orange-500",
+    bg: "bg-amber-50",
   },
   {
     icon: Share2,
     title: "Shareable course links",
     description:
       "Every course gets a public URL. Anyone can learn from it without regenerating.",
-    color: "text-rose-600 bg-rose-50",
+    gradient: "from-rose-500 to-pink-500",
+    bg: "bg-rose-50",
   },
 ];
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="border-t bg-muted/30 py-16 md:py-24">
-      <div className="mx-auto max-w-5xl px-4">
+    <section id="features" className="py-20 md:py-28">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary">
+            Features
+          </p>
+          <h2 className="mt-3 text-3xl font-bold sm:text-4xl md:text-[2.5rem]">
             Everything you need to learn — and prove it
           </h2>
-          <p className="mt-3 text-muted-foreground">
-            Built for the demo stage. Every feature is designed to wow judges
-            in under two minutes.
+          <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+            Built for speed and impact. Every feature is designed to deliver a
+            complete learning experience in minutes.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature) => {
             const Icon = feature.icon;
             return (
-              <Card
+              <article
                 key={feature.title}
-                className="border-border/60 bg-card/80 shadow-sm transition-shadow hover:shadow-md"
+                className="group relative overflow-hidden rounded-3xl border border-white/80 bg-white/70 p-6 shadow-[0_4px_24px_-8px_oklch(0.5_0.1_275_/_12%)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_-12px_oklch(0.5_0.15_275_/_20%)]"
               >
-                <CardHeader className="pb-4">
-                  <span
-                    className={`mb-1 flex size-10 items-center justify-center rounded-xl ${feature.color}`}
-                  >
-                    <Icon className="size-5" />
-                  </span>
-                  <CardTitle className="text-base">{feature.title}</CardTitle>
-                  <CardDescription>{feature.description}</CardDescription>
-                </CardHeader>
-              </Card>
+                <span
+                  className={`mb-5 flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br ${feature.gradient} text-white shadow-lg`}
+                >
+                  <Icon className="size-5" strokeWidth={2} />
+                </span>
+                <h3 className="text-lg font-semibold">{feature.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {feature.description}
+                </p>
+              </article>
             );
           })}
         </div>
