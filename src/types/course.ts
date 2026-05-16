@@ -35,7 +35,7 @@ export type Flashcard = z.infer<typeof flashcardSchema>;
 export type QuizQuestion = z.infer<typeof quizQuestionSchema>;
 export type CourseContent = z.infer<typeof courseContentSchema>;
 
-export const sourceTypeSchema = z.enum(["youtube", "pdf", "article"]);
+export const sourceTypeSchema = z.enum(["youtube", "pdf", "article", "audio"]);
 export type SourceType = z.infer<typeof sourceTypeSchema>;
 
 export const difficultySchema = z.enum(["beginner", "intermediate", "expert"]);
