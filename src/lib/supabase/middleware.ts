@@ -41,14 +41,17 @@ export async function updateSession(request: NextRequest) {
   const isProtected =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/checkout") ||
     pathname.includes("/edit") ||
     pathname === "/api/courses/generate";
 
   if (!user && isProtected && !pathname.startsWith("/api/")) {
     const url = request.nextUrl.clone();
+    const returnPath = `${pathname}${request.nextUrl.search}`;
     url.pathname = "/";
+    url.search = "";
     url.searchParams.set("auth", "signin");
-    url.searchParams.set("redirect", pathname);
+    url.searchParams.set("redirect", returnPath);
     return NextResponse.redirect(url);
   }
 

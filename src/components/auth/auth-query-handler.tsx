@@ -3,23 +3,47 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { isPricingPlanId } from "@/config/pricing";
 import { useAuth } from "@/contexts/auth-context";
+import {
+  getPendingCheckoutRedirect,
+  savePendingCheckout,
+} from "@/lib/checkout/pending-checkout";
 import { markWelcomeOnboarding } from "@/lib/auth/pending-upload";
 
 export function AuthQueryHandler() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { openAuthModal } = useAuth();
+  const { user, isLoading, openAuthModal } = useAuth();
 
   useEffect(() => {
     const auth = searchParams.get("auth");
+    const redirect = searchParams.get("redirect");
+
+    if (redirect?.startsWith("/checkout")) {
+      try {
+        const plan = new URL(redirect, "http://local").searchParams.get("plan");
+        if (plan && isPricingPlanId(plan)) {
+          savePendingCheckout(plan);
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     if (auth === "signin" || auth === "signup") {
       openAuthModal(auth);
-      const redirect = searchParams.get("redirect");
-      const next = redirect ? `/?redirect=${encodeURIComponent(redirect)}` : "/";
+      const next = redirect
+        ? `/?redirect=${encodeURIComponent(redirect)}`
+        : "/";
       router.replace(next);
+      return;
     }
-  }, [searchParams, openAuthModal, router]);
+
+    if (!isLoading && user && redirect) {
+      router.replace(redirect);
+    }
+  }, [searchParams, openAuthModal, router, user, isLoading]);
 
   useEffect(() => {
     const welcome =
@@ -27,6 +51,12 @@ export function AuthQueryHandler() {
       searchParams.get("verified") === "1";
 
     if (welcome) {
+      const checkoutRedirect = getPendingCheckoutRedirect();
+      if (checkoutRedirect) {
+        router.replace(checkoutRedirect);
+        return;
+      }
+
       markWelcomeOnboarding();
       router.replace("/", { scroll: false });
 

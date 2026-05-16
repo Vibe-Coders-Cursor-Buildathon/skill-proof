@@ -143,6 +143,68 @@ Frontend flow: homepage upload → auth modal (if needed) → **progress modal**
 | `PATCH /api/courses/[slug]` | Required | Requires `can_edit_course` |
 | `POST /api/courses/[slug]/publish` | Required | Requires `can_publish_course` |
 | `POST /api/credits/purchase` | Required | Stub — grants credits without payment |
+| `POST /api/stripe/create-checkout-session` | Required | Starts Stripe Checkout (test mode) |
+| `POST /api/stripe/webhook` | Stripe signature | Fulfills plan + credits after payment |
+
+## Stripe payments (sandbox / test mode)
+
+SkillProof uses **Stripe Checkout** for subscriptions. Plans on `/pricing` → `/checkout` → pay → webhook updates Supabase profile + credits.
+
+### 1. Create a Stripe account
+
+1. Sign up at [dashboard.stripe.com](https://dashboard.stripe.com)
+2. Stay in **Test mode** (toggle in the dashboard header)
+
+### 2. API keys → `.env.local`
+
+From **Developers → API keys** (test mode):
+
+```env
+STRIPE_SECRET_KEY=sk_test_xxxxxxxx
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxxxxx
+```
+
+`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is optional for hosted Checkout (redirect flow).
+
+### 3. Webhook secret (optional locally, required in production)
+
+**Quick local test (no webhook):** If you only set `STRIPE_SECRET_KEY`, paying on Checkout still works. After payment, the **success page** confirms the session with Stripe and updates your plan/credits. You do **not** need `STRIPE_WEBHOOK_SECRET` for that.
+
+**Recommended for production** — install [Stripe CLI](https://stripe.com/docs/stripe-cli) for local webhook testing too:
+
+```bash
+stripe login
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+Copy the printed `whsec_…` value into `.env.local`:
+
+```env
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxx
+```
+
+Restart `npm run dev` after changing env vars.
+
+**Production** — in Stripe Dashboard → **Developers → Webhooks → Add endpoint**:
+
+- URL: `https://your-domain.com/api/stripe/webhook`
+- Events: `checkout.session.completed`
+- Copy the signing secret into your host’s env as `STRIPE_WEBHOOK_SECRET`
+
+### 4. Test a payment
+
+1. `npm run dev` + `stripe listen …` (separate terminal)
+2. Sign in → `/pricing` → choose a paid plan → **Pay**
+3. On Stripe Checkout use test card: `4242 4242 4242 4242`, any future expiry, any CVC, any ZIP
+4. After success you should land on `/checkout/success` and see updated credits on `/dashboard`
+
+| Pricing UI plan | DB plan slug | Test price |
+|-----------------|--------------|------------|
+| Individual | `professional` | $10/mo |
+| Business | `premium` | $20/mo |
+| Enterprise | `enterprise` | $35/mo |
+
+More test cards: [Stripe testing docs](https://docs.stripe.com/testing)
 
 ## Project structure
 

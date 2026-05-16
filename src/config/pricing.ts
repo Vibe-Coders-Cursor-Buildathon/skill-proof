@@ -9,6 +9,12 @@ export type PricingPlan = {
   id: PricingPlanId;
   name: string;
   tagline: string;
+  /** Primary price shown on cards (e.g. "Free", "$10") */
+  price: string;
+  /** Billing period suffix (e.g. "/ month") */
+  pricePeriod?: string;
+  /** Amount in cents for checkout (0 = free) */
+  priceCents: number;
   credits: number;
   publishLimit: number | null;
   highlighted?: boolean;
@@ -21,6 +27,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: "free",
     name: "Free",
     tagline: "Explore SkillProof before committing. No card needed.",
+    price: "Free",
+    priceCents: 0,
     credits: 3,
     publishLimit: 0,
     cta: "Start for free",
@@ -37,6 +45,9 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: "individual",
     name: "Individual",
     tagline: "Turn your study material into structured courses — and earn certificates.",
+    price: "$10",
+    pricePeriod: "/ month",
+    priceCents: 1000,
     credits: 20,
     publishLimit: 0,
     highlighted: true,
@@ -54,6 +65,9 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: "business",
     name: "Business",
     tagline: "Train your team. Publish your courses. Brand your certificates.",
+    price: "$20",
+    pricePeriod: "/ month",
+    priceCents: 2000,
     credits: 40,
     publishLimit: 4,
     cta: "Get Business",
@@ -70,6 +84,9 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: "enterprise",
     name: "Enterprise",
     tagline: "Scale across your organization with full control and white-label branding.",
+    price: "$35",
+    pricePeriod: "/ month",
+    priceCents: 3500,
     credits: 100,
     publishLimit: 10,
     cta: "Contact sales",
@@ -83,3 +100,23 @@ export const PRICING_PLANS: PricingPlan[] = [
     ],
   },
 ];
+
+export function isPricingPlanId(value: string): value is PricingPlanId {
+  return PRICING_PLANS.some((p) => p.id === value);
+}
+
+export function getPricingPlan(id: PricingPlanId): PricingPlan {
+  const plan = PRICING_PLANS.find((p) => p.id === id);
+  if (!plan) throw new Error(`Unknown plan: ${id}`);
+  return plan;
+}
+
+export function formatPriceCents(cents: number): string {
+  if (cents === 0) return "Free";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
+}

@@ -4,7 +4,7 @@ import { PageShell } from "@/components/layout/page-shell";
 export const metadata = {
   title: "Pricing | SkillProof",
   description:
-    "Compare SkillProof plans — free, individual, business, and enterprise. Credits for AI course generation, certificates, and publishing.",
+    "Compare SkillProof plans — Free, Individual ($10/mo), Business ($20/mo), and Enterprise ($35/mo).",
 };
 
 export default function PricingPage() {

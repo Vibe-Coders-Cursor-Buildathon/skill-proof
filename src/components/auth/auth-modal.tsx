@@ -10,6 +10,7 @@ import {
   signInWithGoogle,
   signUpWithEmail,
 } from "@/lib/auth/auth-actions";
+import { getPendingCheckoutRedirect } from "@/lib/checkout/pending-checkout";
 import { requireSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
@@ -70,9 +71,13 @@ export function AuthModal() {
     try {
       const supabase = requireSupabaseBrowserClient();
       markOAuthPending();
+      const redirectPath =
+        getPendingCheckoutRedirect() ??
+        new URLSearchParams(window.location.search).get("redirect") ??
+        "/auth/after-login";
       const { error: oauthError } = await signInWithGoogle(
         supabase,
-        "/auth/after-login",
+        redirectPath,
       );
       if (oauthError) {
         setError(oauthError.message);

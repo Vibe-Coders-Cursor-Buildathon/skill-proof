@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ChevronDown, LogOut, Shield, Sparkles, User } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
@@ -11,6 +11,20 @@ import { cn } from "@/lib/utils";
 export function HeaderAuth() {
   const { user, isLoading, requireAuth, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (menuRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [menuOpen]);
 
   if (isLoading) {
     return (
@@ -54,7 +68,7 @@ export function HeaderAuth() {
         </span>
       </div>
 
-      <div className="relative z-50">
+      <div ref={menuRef} className="relative">
         <button
           type="button"
           onClick={() => setMenuOpen((o) => !o)}
@@ -78,15 +92,9 @@ export function HeaderAuth() {
         </button>
 
         {menuOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setMenuOpen(false)}
-              aria-hidden
-            />
             <div
               role="menu"
-              className="absolute top-full right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-border/60 bg-white shadow-xl ring-1 ring-black/5"
+              className="absolute top-full right-0 z-[100] mt-2 w-56 overflow-hidden rounded-2xl border border-border/60 bg-white shadow-xl ring-1 ring-black/5"
             >
               <div className="border-b border-border/50 px-4 py-3">
                 <p className="truncate text-sm font-semibold text-foreground">
@@ -125,9 +133,9 @@ export function HeaderAuth() {
               <button
                 type="button"
                 role="menuitem"
-                onClick={async () => {
+                onClick={() => {
                   setMenuOpen(false);
-                  await logout();
+                  void logout();
                 }}
                 className="flex w-full items-center gap-2.5 border-t border-border/50 px-4 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5"
               >
@@ -135,7 +143,6 @@ export function HeaderAuth() {
                 Sign out
               </button>
             </div>
-          </>
         )}
       </div>
     </div>

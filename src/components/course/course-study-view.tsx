@@ -7,7 +7,6 @@ import {
   BookOpen,
   Brain,
   Check,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   GraduationCap,
@@ -18,8 +17,10 @@ import {
   Trophy,
 } from "lucide-react";
 
+import { ConceptLearningTree } from "@/components/course/concept-learning-tree";
+
 import { cn } from "@/lib/utils";
-import type { Concept, CourseContent, Flashcard, QuizQuestion } from "@/types/course";
+import type { CourseContent, Flashcard, QuizQuestion } from "@/types/course";
 
 type StudyTab = "learn" | "flashcards" | "quiz";
 
@@ -40,17 +41,6 @@ const DIFFICULTY_STYLES: Record<string, { bg: string; text: string; label: strin
   intermediate: { bg: "bg-amber-100", text: "text-amber-700", label: "Intermediate" },
   expert: { bg: "bg-red-100", text: "text-red-700", label: "Expert" },
 };
-
-const CONCEPT_ACCENTS = [
-  { card: "from-indigo-500/10 to-indigo-600/5 border-indigo-200/80", dot: "bg-indigo-600" },
-  { card: "from-violet-500/10 to-violet-600/5 border-violet-200/80", dot: "bg-violet-600" },
-  { card: "from-sky-500/10 to-sky-600/5 border-sky-200/80", dot: "bg-sky-600" },
-  { card: "from-emerald-500/10 to-emerald-600/5 border-emerald-200/80", dot: "bg-emerald-600" },
-  { card: "from-amber-500/10 to-amber-600/5 border-amber-200/80", dot: "bg-amber-600" },
-  { card: "from-pink-500/10 to-pink-600/5 border-pink-200/80", dot: "bg-pink-600" },
-  { card: "from-teal-500/10 to-teal-600/5 border-teal-200/80", dot: "bg-teal-600" },
-  { card: "from-orange-500/10 to-orange-600/5 border-orange-200/80", dot: "bg-orange-600" },
-];
 
 const TABS: { id: StudyTab; label: string; icon: typeof BookOpen }[] = [
   { id: "learn", label: "Learn", icon: BookOpen },
@@ -89,7 +79,7 @@ export function CourseStudyView({ course, meta }: CourseStudyViewProps) {
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
+    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
       <Link
         href="/dashboard?tab=courses"
         className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
@@ -265,8 +255,6 @@ function LearnPanel({
   progress: number;
   onStartFlashcards: () => void;
 }) {
-  const [openIndex, setOpenIndex] = useState<number>(0);
-
   return (
     <div className="space-y-6">
       <div className="glass-card p-5 sm:p-6">
@@ -292,29 +280,11 @@ function LearnPanel({
         </div>
       </div>
 
-      <div>
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
-          <Brain className="size-5 text-indigo-500" />
-          Key concepts
-          <span className="text-sm font-normal text-muted-foreground">
-            — tap to expand, check when you get it
-          </span>
-        </h2>
-        <div className="space-y-3">
-          {course.concepts.map((concept, i) => (
-            <ConceptCard
-              key={i}
-              index={i}
-              concept={concept}
-              isOpen={openIndex === i}
-              isMastered={mastered.has(i)}
-              onToggleOpen={() => setOpenIndex(openIndex === i ? -1 : i)}
-              onToggleMastered={() => onToggleMastered(i)}
-              accent={CONCEPT_ACCENTS[i % CONCEPT_ACCENTS.length]}
-            />
-          ))}
-        </div>
-      </div>
+      <ConceptLearningTree
+        concepts={course.concepts}
+        mastered={mastered}
+        onToggleMastered={onToggleMastered}
+      />
 
       {progress >= 50 && (
         <div className="glass-card flex flex-col items-center gap-4 p-6 text-center sm:flex-row sm:text-left">
@@ -337,94 +307,6 @@ function LearnPanel({
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-function ConceptCard({
-  index,
-  concept,
-  isOpen,
-  isMastered,
-  onToggleOpen,
-  onToggleMastered,
-  accent,
-}: {
-  index: number;
-  concept: Concept;
-  isOpen: boolean;
-  isMastered: boolean;
-  onToggleOpen: () => void;
-  onToggleMastered: () => void;
-  accent: (typeof CONCEPT_ACCENTS)[number];
-}) {
-  return (
-    <div
-      className={cn(
-        "overflow-hidden rounded-2xl border bg-gradient-to-br transition-shadow",
-        accent.card,
-        isOpen && "shadow-md",
-      )}
-    >
-      <button
-        type="button"
-        onClick={onToggleOpen}
-        className="flex w-full items-center gap-3 p-4 text-left sm:p-5"
-      >
-        <span
-          className={cn(
-            "flex size-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white",
-            accent.dot,
-          )}
-        >
-          {index + 1}
-        </span>
-        <span className="min-w-0 flex-1 font-semibold leading-snug">
-          {concept.title}
-        </span>
-        {isMastered && (
-          <span className="flex size-6 items-center justify-center rounded-full bg-emerald-500 text-white">
-            <Check className="size-3.5" strokeWidth={3} />
-          </span>
-        )}
-        <ChevronDown
-          className={cn(
-            "size-5 shrink-0 text-muted-foreground transition-transform duration-300",
-            isOpen && "rotate-180",
-          )}
-        />
-      </button>
-
-      <div
-        className={cn(
-          "grid transition-all duration-300 ease-out",
-          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="border-t border-white/60 px-4 pb-4 pt-2 sm:px-5 sm:pb-5">
-            <p className="text-sm leading-relaxed text-foreground/85">
-              {concept.explanation}
-            </p>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleMastered();
-              }}
-              className={cn(
-                "mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-colors",
-                isMastered
-                  ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                  : "bg-white/80 text-foreground shadow-sm hover:bg-white",
-              )}
-            >
-              <Check className="size-3.5" />
-              {isMastered ? "Mastered" : "Mark as understood"}
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

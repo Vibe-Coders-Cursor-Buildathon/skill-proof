@@ -15,6 +15,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   AUTH_PENDING_ACTION_KEY,
   consumeOAuthPendingAction,
+  signOutOnServer,
 } from "@/lib/auth/auth-actions";
 import { mapSessionToUser, mapSupabaseUser } from "@/lib/auth/map-user";
 import type { ProfileRole } from "@/types/plan";
@@ -197,10 +198,21 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
   }, []);
 
   const logout = useCallback(async () => {
-    const supabase = createSupabaseBrowserClient();
-    if (supabase) await supabase.auth.signOut();
-    setUser(null);
+    setIsAuthModalOpen(false);
     pendingCallback.current = undefined;
+
+    try {
+      await signOutOnServer();
+    } catch {
+      // still clear client session below
+    }
+
+    const supabase = createSupabaseBrowserClient();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+
+    setUser(null);
     isFirstAuthEvent.current = true;
     router.push("/");
     router.refresh();

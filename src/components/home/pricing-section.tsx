@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { PlanSelectButton } from "@/components/pricing/plan-select-button";
 import { PRICING_PLANS } from "@/config/pricing";
 import type { PricingPlan, PricingPlanId } from "@/config/pricing";
 import { cn } from "@/lib/utils";
@@ -78,8 +78,8 @@ export function PricingSection({ className }: { className?: string }) {
             <span className="text-gradient">fits your goals</span>
           </h2>
           <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
-            Start free with 3 credits. Upgrade for certificates, editing, and
-            publishing — all powered by Gemini.
+            Start free, then scale from $10/month. Upgrade for certificates,
+            editing, and publishing — all powered by Gemini.
           </p>
         </div>
 
@@ -159,25 +159,33 @@ function PricingCard({ plan }: { plan: PricingPlan }) {
           </span>
         </div>
 
-        {/* Credits */}
+        {/* Price */}
         <div className="mt-6">
           <div
             className={cn(
-              "inline-flex items-baseline gap-2 rounded-2xl px-4 py-3 ring-1 ring-inset",
+              "inline-flex flex-wrap items-baseline gap-x-1.5 gap-y-0 rounded-2xl px-4 py-3 ring-1 ring-inset",
               accent.pill,
+              plan.id === "free" && "px-5 py-4",
             )}
           >
-            <span className="text-4xl font-bold tabular-nums leading-none tracking-tight">
-              {plan.credits}
+            <span
+              className={cn(
+                "font-bold tabular-nums leading-none tracking-tight",
+                plan.id === "free" ? "text-4xl" : "text-4xl sm:text-[2.75rem]",
+              )}
+            >
+              {plan.price}
             </span>
-            <span className="text-sm font-semibold opacity-80">
-              {plan.id === "free" ? "credits" : "/ month"}
-            </span>
+            {plan.pricePeriod && (
+              <span className="text-base font-semibold text-muted-foreground">
+                {plan.pricePeriod}
+              </span>
+            )}
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
             {plan.id === "free"
-              ? "Enough to try the full course flow"
-              : `Generate up to ${plan.credits} courses`}
+              ? "3 credits · no card required"
+              : `${plan.credits} course credits per month`}
           </p>
         </div>
 
@@ -245,7 +253,8 @@ function PricingCard({ plan }: { plan: PricingPlan }) {
         </div>
 
         {/* CTA */}
-        <Button
+        <PlanSelectButton
+          planId={plan.id}
           className={cn(
             "mt-8 h-12 w-full rounded-xl text-sm font-semibold",
             isFeatured
@@ -255,17 +264,10 @@ function PricingCard({ plan }: { plan: PricingPlan }) {
                 : "border-2 border-indigo-200/80 bg-white text-indigo-700 hover:border-indigo-300 hover:bg-indigo-50/50",
           )}
           variant={isFeatured ? "default" : "outline"}
-          render={
-            plan.id === "enterprise" ? (
-              <a href="mailto:hello@skillproof.app" />
-            ) : (
-              <a href="/#upload" />
-            )
-          }
         >
           {plan.cta}
           {isFeatured && <ArrowRight className="size-4" />}
-        </Button>
+        </PlanSelectButton>
       </div>
     </article>
   );

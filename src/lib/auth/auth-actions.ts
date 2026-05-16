@@ -47,6 +47,11 @@ export function markOAuthPendingAction() {
   sessionStorage.setItem(AUTH_PENDING_ACTION_KEY, "1");
 }
 
+/** Clears the Supabase session cookie on the server (required for Next.js App Router). */
+export async function signOutOnServer(): Promise<void> {
+  await fetch("/api/auth/signout", { method: "POST", credentials: "same-origin" });
+}
+
 export function consumeOAuthPendingAction(): boolean {
   if (typeof window === "undefined") return false;
   const pending = sessionStorage.getItem(AUTH_PENDING_ACTION_KEY) === "1";

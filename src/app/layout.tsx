@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 
+import { AuthQueryHandler } from "@/components/auth/auth-query-handler";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { CourseGenerationModal } from "@/components/generation/course-generation-modal";
 import { AuthProvider } from "@/contexts/auth-context";
@@ -36,6 +38,9 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider initialUser={initialUser}>
           <GenerationProvider>
+            <Suspense fallback={null}>
+              <AuthQueryHandler />
+            </Suspense>
             {children}
             <AuthModal />
             <CourseGenerationModal />

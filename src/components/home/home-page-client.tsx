@@ -1,12 +1,4 @@
-"use client";
-
-import { Suspense } from "react";
-import { AuthQueryHandler } from "@/components/auth/auth-query-handler";
-
+/** Reserved for future home-only client effects. Auth URL handling lives in root layout. */
 export function HomePageClient() {
-  return (
-    <Suspense fallback={null}>
-      <AuthQueryHandler />
-    </Suspense>
-  );
+  return null;
 }
