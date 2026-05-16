@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export default async function DashboardPage() {
   const user = await getUser();
   if (!user) {
-    redirect("/auth/login");
+    redirect("/?auth=signin&redirect=/dashboard");
   }
 
   const data = await getProfileWithPlan(user.id);

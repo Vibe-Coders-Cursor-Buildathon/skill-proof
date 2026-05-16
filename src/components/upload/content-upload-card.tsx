@@ -105,7 +105,7 @@ type ContentUploadCardProps = {
 };
 
 export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
-  const { requireAuth } = useAuth();
+  const { requireAuth, isLoading: isAuthLoading } = useAuth();
   const [sourceType, setSourceType] = useState<SourceType>("youtube");
   const [audioInputMode, setAudioInputMode] = useState<AudioInputMode>("link");
   const [url, setUrl] = useState("");
@@ -180,9 +180,39 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
 
   const handleGenerate = async (payload: UploadFormPayload) => {
     setIsSubmitting(true);
+    setError(null);
     try {
+      const res = await fetch("/api/courses/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceType: payload.sourceType,
+          url: "url" in payload ? payload.url : undefined,
+          language: payload.language,
+          difficulty: payload.difficulty,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        setError("Please sign in to generate a course.");
+        return;
+      }
+      if (res.status === 402) {
+        setError("You need more credits to generate a course.");
+        return;
+      }
+      if (!res.ok) {
+        setError(
+          typeof data.error === "string"
+            ? data.error
+            : "Course generation is not available yet.",
+        );
+        return;
+      }
+
       onSubmit?.(payload);
-      await new Promise((r) => setTimeout(r, 600));
     } finally {
       setIsSubmitting(false);
     }
@@ -386,10 +416,12 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
         <Button
           type="submit"
           size="lg"
-          disabled={isSubmitting}
+          disabled={isAuthLoading || isSubmitting}
           className="btn-gradient mt-6 h-12 w-full rounded-2xl border-0 text-base font-semibold"
         >
-          {isSubmitting ? (
+          {isAuthLoading ? (
+            "Checking session…"
+          ) : isSubmitting ? (
             "Preparing your course…"
           ) : (
             <>

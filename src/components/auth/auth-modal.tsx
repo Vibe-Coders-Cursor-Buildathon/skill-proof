@@ -1,49 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, GraduationCap, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useAuth, type AuthUser } from "@/contexts/auth-context";
+import { useAuth } from "@/contexts/auth-context";
+import {
+  signInWithEmail,
+  signInWithGoogle,
+  signUpWithEmail,
+} from "@/lib/auth/auth-actions";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
 type Tab = "signin" | "signup";
 
 export function AuthModal() {
-  const { isAuthModalOpen, closeAuthModal, login } = useAuth();
-  const [tab, setTab] = useState<Tab>("signin");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { isAuthModalOpen, authModalTab, closeAuthModal } = useAuth();
 
-  // Sign-in fields
-  const [siEmail, setSiEmail] = useState("");
-  const [siPassword, setSiPassword] = useState("");
-
-  // Sign-up fields
-  const [suName, setSuName] = useState("");
-  const [suEmail, setSuEmail] = useState("");
-  const [suPassword, setSuPassword] = useState("");
-
-  const firstInputRef = useRef<HTMLInputElement>(null);
-
-  // Reset state when modal opens
-  useEffect(() => {
-    if (isAuthModalOpen) {
-      setTab("signin");
-      setError(null);
-      setIsLoading(false);
-      setSiEmail("");
-      setSiPassword("");
-      setSuName("");
-      setSuEmail("");
-      setSuPassword("");
-      setShowPassword(false);
-      setTimeout(() => firstInputRef.current?.focus(), 80);
-    }
-  }, [isAuthModalOpen]);
-
-  // Close on Escape
   useEffect(() => {
     if (!isAuthModalOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -55,87 +30,159 @@ export function AuthModal() {
 
   if (!isAuthModalOpen) return null;
 
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+        onClick={closeAuthModal}
+        aria-hidden
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      >
+        <AuthModalPanel
+          key={authModalTab}
+          initialTab={authModalTab}
+          onClose={closeAuthModal}
+        />
+      </div>
+    </>
+  );
+}
+
+function AuthModalPanel({
+  initialTab,
+  onClose,
+}: {
+  initialTab: Tab;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const { markOAuthPending } = useAuth();
+  const [tab, setTab] = useState<Tab>(initialTab);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const [siEmail, setSiEmail] = useState("");
+  const [siPassword, setSiPassword] = useState("");
+  const [suName, setSuName] = useState("");
+  const [suEmail, setSuEmail] = useState("");
+  const [suPassword, setSuPassword] = useState("");
+
+  const firstInputRef = useRef<HTMLInputElement>(null);
+  const supabase = createSupabaseBrowserClient();
+
+  useEffect(() => {
+    const t = setTimeout(() => firstInputRef.current?.focus(), 80);
+    return () => clearTimeout(t);
+  }, [tab]);
+
   const handleGoogleAuth = async () => {
     setError(null);
+    setSuccessMessage(null);
     setIsLoading(true);
-    // Simulated Google auth — replace with real OAuth later
-    await new Promise((r) => setTimeout(r, 900));
-    const user: AuthUser = {
-      name: "Google User",
-      email: "user@gmail.com",
-      avatarLetter: "G",
-    };
-    login(user);
-    setIsLoading(false);
+    markOAuthPending();
+
+    const { error: oauthError } = await signInWithGoogle(
+      supabase,
+      window.location.pathname + window.location.search,
+    );
+
+    if (oauthError) {
+      setIsLoading(false);
+      setError(oauthError.message);
+    }
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
 
     if (tab === "signup") {
-      if (!suName.trim()) { setError("Please enter your name."); return; }
-      if (!suEmail.trim()) { setError("Please enter your email."); return; }
-      if (suPassword.length < 6) { setError("Password must be at least 6 characters."); return; }
+      if (!suName.trim()) {
+        setError("Please enter your name.");
+        return;
+      }
+      if (!suEmail.trim()) {
+        setError("Please enter your email.");
+        return;
+      }
+      if (suPassword.length < 6) {
+        setError("Password must be at least 6 characters.");
+        return;
+      }
+
       setIsLoading(true);
-      await new Promise((r) => setTimeout(r, 900));
-      const user: AuthUser = {
-        name: suName.trim(),
+      const { data, error: signUpError } = await signUpWithEmail(supabase, {
         email: suEmail.trim().toLowerCase(),
-        avatarLetter: suName.trim()[0].toUpperCase(),
-      };
-      login(user);
-    } else {
-      if (!siEmail.trim()) { setError("Please enter your email."); return; }
-      if (!siPassword) { setError("Please enter your password."); return; }
-      setIsLoading(true);
-      await new Promise((r) => setTimeout(r, 900));
-      const name = siEmail.split("@")[0];
-      const user: AuthUser = {
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        email: siEmail.trim().toLowerCase(),
-        avatarLetter: name[0].toUpperCase(),
-      };
-      login(user);
+        password: suPassword,
+        fullName: suName.trim(),
+      });
+      setIsLoading(false);
+
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
+
+      if (data.session) {
+        router.refresh();
+        return;
+      }
+
+      setSuccessMessage(
+        "Check your email for a confirmation link to complete sign up.",
+      );
+      return;
     }
+
+    if (!siEmail.trim()) {
+      setError("Please enter your email.");
+      return;
+    }
+    if (!siPassword) {
+      setError("Please enter your password.");
+      return;
+    }
+
+    setIsLoading(true);
+    const { error: signInError } = await signInWithEmail(
+      supabase,
+      siEmail.trim().toLowerCase(),
+      siPassword,
+    );
     setIsLoading(false);
+
+    if (signInError) {
+      setError(signInError.message);
+      return;
+    }
+
+    router.refresh();
   };
 
   const email = tab === "signin" ? siEmail : suEmail;
   const password = tab === "signin" ? siPassword : suPassword;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-        onClick={closeAuthModal}
-        aria-hidden
-      />
-
-      {/* Panel */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={tab === "signin" ? "Sign in to SkillProof" : "Create your account"}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      >
         <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-[0_32px_80px_-16px_rgba(0,0,0,0.25)] ring-1 ring-black/8">
-          {/* Close */}
           <button
             type="button"
-            onClick={closeAuthModal}
+            onClick={onClose}
             className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="Close"
           >
             <X className="size-4" />
           </button>
 
-          {/* Top accent bar */}
           <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" />
 
-          <div className="px-8 pb-8 pt-7">
-            {/* Logo */}
+          <div className="px-8 pt-7 pb-8">
             <div className="mb-6 flex flex-col items-center gap-3 text-center">
               <span className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30">
                 <GraduationCap className="size-6" strokeWidth={2} />
@@ -152,7 +199,6 @@ export function AuthModal() {
               </div>
             </div>
 
-            {/* Google button */}
             <button
               type="button"
               onClick={handleGoogleAuth}
@@ -167,7 +213,6 @@ export function AuthModal() {
               Continue with Google
             </button>
 
-            {/* Divider */}
             <div className="my-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-border" />
               <span className="text-xs font-medium text-muted-foreground">
@@ -176,17 +221,29 @@ export function AuthModal() {
               <div className="h-px flex-1 bg-border" />
             </div>
 
-            {/* Tab switcher */}
             <div className="mb-5 flex rounded-xl bg-muted/50 p-1">
-              <TabButton active={tab === "signin"} onClick={() => { setTab("signin"); setError(null); }}>
+              <TabButton
+                active={tab === "signin"}
+                onClick={() => {
+                  setTab("signin");
+                  setError(null);
+                  setSuccessMessage(null);
+                }}
+              >
                 Sign in
               </TabButton>
-              <TabButton active={tab === "signup"} onClick={() => { setTab("signup"); setError(null); }}>
+              <TabButton
+                active={tab === "signup"}
+                onClick={() => {
+                  setTab("signup");
+                  setError(null);
+                  setSuccessMessage(null);
+                }}
+              >
                 Create account
               </TabButton>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleEmailSubmit} noValidate className="space-y-3">
               {tab === "signup" && (
                 <AuthInput
@@ -219,14 +276,20 @@ export function AuthModal() {
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder={tab === "signup" ? "At least 6 characters" : "Your password"}
+                    placeholder={
+                      tab === "signup"
+                        ? "At least 6 characters"
+                        : "Your password"
+                    }
                     value={password}
                     onChange={(e) =>
                       tab === "signin"
                         ? setSiPassword(e.target.value)
                         : setSuPassword(e.target.value)
                     }
-                    autoComplete={tab === "signin" ? "current-password" : "new-password"}
+                    autoComplete={
+                      tab === "signin" ? "current-password" : "new-password"
+                    }
                     disabled={isLoading}
                     className="h-11 w-full rounded-xl border border-input bg-background pr-11 pl-4 text-sm transition-all outline-none placeholder:text-muted-foreground/60 focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/15 disabled:opacity-60"
                   />
@@ -234,10 +297,14 @@ export function AuthModal() {
                     type="button"
                     tabIndex={-1}
                     onClick={() => setShowPassword((p) => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -245,6 +312,12 @@ export function AuthModal() {
               {error && (
                 <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
+                </p>
+              )}
+
+              {successMessage && (
+                <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">
+                  {successMessage}
                 </p>
               )}
 
@@ -268,18 +341,22 @@ export function AuthModal() {
 
             <p className="mt-5 text-center text-xs text-muted-foreground">
               By continuing you agree to our{" "}
-              <a href="#" className="underline underline-offset-2 hover:text-foreground">
+              <a
+                href="#"
+                className="underline underline-offset-2 hover:text-foreground"
+              >
                 Terms
               </a>{" "}
               and{" "}
-              <a href="#" className="underline underline-offset-2 hover:text-foreground">
+              <a
+                href="#"
+                className="underline underline-offset-2 hover:text-foreground"
+              >
                 Privacy Policy
               </a>
             </p>
           </div>
         </div>
-      </div>
-    </>
   );
 }
 
@@ -329,7 +406,9 @@ function AuthInput({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-semibold text-foreground">{label}</label>
+      <label className="block text-sm font-semibold text-foreground">
+        {label}
+      </label>
       <input
         ref={ref}
         type={type}
