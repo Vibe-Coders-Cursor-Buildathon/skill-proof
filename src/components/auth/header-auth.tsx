@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { ChevronDown, LogOut, Sparkles, User } from "lucide-react";
+import { ChevronDown, LogOut, Shield, Sparkles, User } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
