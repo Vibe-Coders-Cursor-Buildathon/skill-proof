@@ -39,6 +39,7 @@ type AuthContextValue = {
   openAuthModal: (tab?: AuthTab) => void;
   closeAuthModal: () => void;
   markOAuthPending: () => void;
+  updateCredits: (newBalance: number) => void;
   logout: () => Promise<void>;
 };
 
@@ -193,6 +194,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user, isLoading, openAuthModal],
   );
 
+  const updateCredits = useCallback((newBalance: number) => {
+    setUser((prev) => prev ? { ...prev, creditsBalance: newBalance } : prev);
+  }, []);
+
   const logout = useCallback(async () => {
     const supabase = createSupabaseBrowserClient();
     if (supabase) await supabase.auth.signOut();
@@ -213,6 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         openAuthModal,
         closeAuthModal,
         markOAuthPending,
+        updateCredits,
         logout,
       }}
     >

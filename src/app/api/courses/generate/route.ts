@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 
-import { handleApiError, unauthorized } from "@/lib/api/errors";
+import { handleApiError, insufficientCredits, unauthorized } from "@/lib/api/errors";
 import { generateCourseFromContent } from "@/lib/gemini/generate-course";
 import { getUser } from "@/lib/auth/session";
 import { fetchYouTubeTranscript } from "@/lib/content/youtube";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getCreditBalance, spendCourseCredit } from "@/lib/auth/credits";
 import { generateCourseRequestSchema } from "@/types/api";
 import { courseContentSchema } from "@/types/course";
 
@@ -62,6 +63,12 @@ export async function POST(request: Request) {
 
     const { sourceType, url, language, difficulty } = parsed.data;
     console.log("[generate] parsed:", { sourceType, url, language, difficulty });
+
+    // Check credits before doing any expensive work
+    const balance = await getCreditBalance(user.id);
+    if (balance < 1) {
+      return insufficientCredits();
+    }
 
     // Extract content based on source type
     let content = "";
@@ -136,7 +143,15 @@ export async function POST(request: Request) {
 
     console.log("[generate] ✅ Course saved to DB. slug:", course.slug);
 
-    return NextResponse.json({ slug: course.slug, course: validated.data }, { status: 201 });
+    // Spend 1 credit now that everything succeeded
+    const creditResult = await spendCourseCredit(user.id, course.slug);
+    const newBalance = creditResult.ok ? creditResult.balance : balance - 1;
+    console.log("[generate] ✅ Credit spent. New balance:", newBalance);
+
+    return NextResponse.json(
+      { slug: course.slug, course: validated.data, creditsBalance: newBalance },
+      { status: 201 },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message.includes("429") || message.includes("quota") || message.includes("Too Many Requests")) {
