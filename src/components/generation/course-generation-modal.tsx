@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   GraduationCap,
   Loader2,
-  Sparkles,
   Video,
   X,
 } from "lucide-react";
@@ -14,14 +13,7 @@ import { useGeneration } from "@/contexts/generation-context";
 import { cn } from "@/lib/utils";
 
 export function CourseGenerationModal() {
-  const {
-    isOpen,
-    steps,
-    error,
-    payload,
-    transcriptResult,
-    closeGeneration,
-  } = useGeneration();
+  const { isOpen, steps, error, payload, closeGeneration } = useGeneration();
 
   if (!isOpen) return null;
 
@@ -58,13 +50,13 @@ export function CourseGenerationModal() {
               </span>
               <div>
                 <h2 className="text-xl font-bold tracking-tight">
-                  {hasError ? "Couldn’t create course" : "Creating your course"}
+                  {hasError ? "Couldn't create course" : "Creating your course"}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {hasError
                     ? error
                     : isYouTube
-                      ? "Hang tight — we’re pulling content from your video"
+                      ? "Hang tight — we're pulling content from your video"
                       : "Setting up your learning experience"}
                 </p>
               </div>
@@ -85,14 +77,10 @@ export function CourseGenerationModal() {
                   key={step.id}
                   className={cn(
                     "flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-300",
-                    step.status === "active" &&
-                      "border-indigo-200 bg-indigo-50/80 shadow-sm",
-                    step.status === "done" &&
-                      "border-emerald-200/80 bg-emerald-50/50",
-                    step.status === "error" &&
-                      "border-destructive/30 bg-destructive/5",
-                    step.status === "pending" &&
-                      "border-transparent bg-muted/20 opacity-60",
+                    step.status === "active" && "border-indigo-200 bg-indigo-50/80 shadow-sm",
+                    step.status === "done" && "border-emerald-200/80 bg-emerald-50/50",
+                    step.status === "error" && "border-destructive/30 bg-destructive/5",
+                    step.status === "pending" && "border-transparent bg-muted/20 opacity-60",
                   )}
                 >
                   <StepIcon status={step.status} />
@@ -106,29 +94,10 @@ export function CourseGenerationModal() {
                     )}
                   >
                     {step.label}
-                    {step.id === "structuring" && step.status === "active" && (
-                      <span className="ml-1 text-xs font-normal text-indigo-600">
-                        (Gemini — coming next)
-                      </span>
-                    )}
                   </span>
                 </li>
               ))}
             </ol>
-
-            {transcriptResult && !hasError && (
-              <div className="mt-5 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
-                <div className="mb-2 flex items-center gap-2">
-                  <Sparkles className="size-3.5 text-indigo-500" />
-                  <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">
-                    Transcript ready · {transcriptResult.wordCount} words
-                  </p>
-                </div>
-                <p className="line-clamp-3 text-xs leading-relaxed text-indigo-900/80">
-                  {transcriptResult.preview}
-                </p>
-              </div>
-            )}
 
             {hasError && (
               <Button
@@ -148,15 +117,9 @@ export function CourseGenerationModal() {
 }
 
 function StepIcon({ status }: { status: "pending" | "active" | "done" | "error" }) {
-  if (status === "done") {
-    return <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />;
-  }
-  if (status === "active") {
-    return <Loader2 className="size-5 shrink-0 animate-spin text-indigo-600" />;
-  }
-  if (status === "error") {
-    return <X className="size-5 shrink-0 text-destructive" />;
-  }
+  if (status === "done") return <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />;
+  if (status === "active") return <Loader2 className="size-5 shrink-0 animate-spin text-indigo-600" />;
+  if (status === "error") return <X className="size-5 shrink-0 text-destructive" />;
   return (
     <span className="flex size-5 shrink-0 items-center justify-center">
       <span className="size-2 rounded-full bg-muted-foreground/30" />

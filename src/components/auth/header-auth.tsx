@@ -97,7 +97,7 @@ export function HeaderAuth() {
                   setMenuOpen(false);
                   await logout();
                 }}
-                className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/8 md:hidden"
+                className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5"
               >
                 <LogOut className="size-4" />
                 Sign out
@@ -106,28 +106,6 @@ export function HeaderAuth() {
           </>
         )}
       </div>
-
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => logout()}
-        className="hidden h-10 gap-1.5 rounded-full border-border/60 bg-white/80 px-4 text-sm font-medium shadow-sm hover:bg-white md:inline-flex"
-      >
-        <LogOut className="size-4" />
-        Log out
-      </Button>
-
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        onClick={() => logout()}
-        className="inline-flex size-10 shrink-0 rounded-full border-border/60 bg-white/80 shadow-sm hover:bg-white md:hidden"
-        aria-label="Log out"
-      >
-        <LogOut className="size-4" />
-      </Button>
     </div>
   );
 }
