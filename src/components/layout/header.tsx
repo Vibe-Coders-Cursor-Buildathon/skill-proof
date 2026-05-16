@@ -30,7 +30,6 @@ export function Header() {
             How it works
           </a>
         </nav>
-
         <Button
           size="sm"
           className="btn-gradient h-10 rounded-full px-5 text-sm font-semibold"
