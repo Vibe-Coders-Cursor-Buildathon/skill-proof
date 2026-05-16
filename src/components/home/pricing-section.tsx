@@ -60,7 +60,7 @@ const PLAN_ACCENT: Record<
 
 export function PricingSection() {
   return (
-    <section id="pricing" className="relative overflow-hidden py-24 md:py-32">
+    <section id="pricing" className="relative overflow-hidden py-3">
       <div
         aria-hidden
         className="pricing-surface pointer-events-none absolute inset-0 -z-10"
