@@ -10,7 +10,7 @@ export function LatestCoursesSection() {
   const latest = getLatestCourses(MOCK_COURSES, 6);
 
   return (
-    <section id="courses" className="py-20 md:py-28">
+    <section id="courses" className="py-[11px]">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
           <div className="max-w-xl">

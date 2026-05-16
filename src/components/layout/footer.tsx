@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 
+import { MAIN_NAV_LINKS } from "@/config/nav";
+
+export function Footer() {
 type FooterProps = {
   variant?: "full" | "minimal";
 };
@@ -19,6 +22,17 @@ export function Footer({ variant = "full" }: FooterProps) {
               Cursor Buildathon 2026 · Colombo
             </p>
           </div>
+        </div>
+        <div className="flex flex-wrap justify-center gap-6 text-sm font-medium text-muted-foreground sm:gap-8">
+          {MAIN_NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="transition-colors hover:text-primary"
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
         {variant === "full" && (
           <div className="flex flex-wrap justify-center gap-6 text-sm font-medium text-muted-foreground sm:gap-8">
