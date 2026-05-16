@@ -12,7 +12,7 @@ export async function generateCourseFromContent(params: {
   content: string;
   language: string;
   difficulty: string;
-  sourceType: "youtube" | "pdf" | "article";
+  sourceType: "youtube" | "pdf" | "article" | "audio";
 }): Promise<CourseContent> {
   const model = getCourseGenerationModel("gemini-2.5-flash");
   const langName = LANGUAGE_NAMES[params.language] ?? params.language;
