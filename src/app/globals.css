@@ -167,4 +167,25 @@
   .btn-gradient {
     @apply bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25 transition-all hover:shadow-xl hover:shadow-indigo-500/30 hover:brightness-105 active:scale-[0.99];
   }
+
+  .pricing-surface {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -20%, oklch(0.88 0.08 275 / 45%), transparent),
+      radial-gradient(ellipse 60% 50% at 100% 50%, oklch(0.92 0.06 300 / 35%), transparent),
+      radial-gradient(ellipse 50% 40% at 0% 80%, oklch(0.94 0.05 260 / 30%), transparent),
+      oklch(0.98 0.008 280);
+  }
+
+  .pricing-card-featured {
+    background: linear-gradient(
+      145deg,
+      oklch(1 0 0) 0%,
+      oklch(0.98 0.02 275) 50%,
+      oklch(0.97 0.03 285) 100%
+    );
+    box-shadow:
+      0 0 0 1px oklch(0.75 0.12 275 / 35%),
+      0 24px 48px -12px oklch(0.45 0.15 275 / 18%),
+      0 8px 16px -8px oklch(0.5 0.1 275 / 10%);
+  }
 }
