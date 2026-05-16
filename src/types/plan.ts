@@ -5,13 +5,17 @@ const featureShape = Object.fromEntries(
   PLAN_FEATURE_KEYS.map((key) => [key, z.boolean()]),
 ) as Record<(typeof PLAN_FEATURE_KEYS)[number], z.ZodBoolean>;
 
-export const planFeaturesSchema = z.object(featureShape);
+export const planFeaturesSchema = z
+  .object(featureShape)
+  .extend({
+    max_published_courses: z.coerce.number().int().min(0).default(0),
+  });
 
 export type PlanFeatures = z.infer<typeof planFeaturesSchema>;
 
 export const planSchema = z.object({
   id: z.string().uuid(),
-  slug: z.enum(["basic", "professional", "premium", "enterprise"]),
+  slug: z.enum(["free", "individual", "business", "enterprise"]),
   name: z.string(),
   features: planFeaturesSchema,
   included_credits_monthly: z.number().int().min(0),
