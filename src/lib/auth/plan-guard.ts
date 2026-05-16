@@ -5,10 +5,17 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export class PlanFeatureError extends Error {
   constructor(
     public feature: PlanFeatureKey,
-    message = `Plan does not include feature: ${feature}`,
+    message?: string,
   ) {
-    super(message);
+    super(message ?? `Plan does not include feature: ${feature}`);
     this.name = "PlanFeatureError";
+  }
+}
+
+export class PlanLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PlanLimitError";
   }
 }
 
@@ -45,6 +52,11 @@ export async function userHasFeature(
   return result.plan.features[feature] === true;
 }
 
+export async function getMaxPublishedCourses(userId: string): Promise<number> {
+  const result = await getProfileWithPlan(userId);
+  return result?.plan.features?.max_published_courses ?? 0;
+}
+
 export async function requireFeature(
   userId: string,
   feature: PlanFeatureKey,
@@ -52,5 +64,15 @@ export async function requireFeature(
   const allowed = await userHasFeature(userId, feature);
   if (!allowed) {
     throw new PlanFeatureError(feature);
+  }
+}
+
+export async function requireCanIssueCertificate(userId: string): Promise<void> {
+  const allowed = await userHasFeature(userId, "can_issue_certificate");
+  if (!allowed) {
+    throw new PlanFeatureError(
+      "can_issue_certificate",
+      "Your plan does not include certificates. Upgrade to Individual or higher.",
+    );
   }
 }
