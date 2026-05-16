@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+
 import { ChevronDown, LogOut, Sparkles, User } from "lucide-react";
 import { useState } from "react";
 
@@ -107,6 +108,17 @@ export function HeaderAuth() {
                 <User className="size-4" />
                 Dashboard
               </Link>
+              {user.role === "admin" && (
+                <Link
+                  href="/admin"
+                  role="menuitem"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                >
+                  <Shield className="size-4" />
+                  Admin panel
+                </Link>
+              )}
               <button
                 type="button"
                 role="menuitem"
