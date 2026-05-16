@@ -26,13 +26,23 @@ export function Header() {
           </a>
         </nav>
 
-        <Button
-          size="sm"
-          className="rounded-lg shadow-sm"
-          render={<a href="#upload" />}
-        >
-          Get started
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-lg"
+            render={<Link href="/auth/login" />}
+          >
+            Sign in
+          </Button>
+          <Button
+            size="sm"
+            className="rounded-lg shadow-sm"
+            render={<Link href="/dashboard" />}
+          >
+            Dashboard
+          </Button>
+        </div>
       </div>
     </header>
   );
