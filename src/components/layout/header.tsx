@@ -24,6 +24,12 @@ export function Header() {
             Features
           </a>
           <a
+            href="#pricing"
+            className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/80 hover:text-foreground"
+          >
+            Pricing
+          </a>
+          <a
             href="#how-it-works"
             className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/80 hover:text-foreground"
           >
