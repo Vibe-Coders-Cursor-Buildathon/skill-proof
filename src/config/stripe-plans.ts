@@ -1,14 +1,16 @@
 import type { PricingPlanId } from "@/config/pricing";
 
-/** Paid pricing cards → rows in `plans` table (Supabase). */
+/** Paid pricing cards → rows in `plans` table (Supabase). 1:1 slug mapping. */
 export const PRICING_TO_DB_PLAN_SLUG: Record<
   Exclude<PricingPlanId, "free">,
   string
 > = {
-  individual: "professional",
-  business: "premium",
+  individual: "individual",
+  business: "business",
   enterprise: "enterprise",
 };
+
+export const FREE_DB_PLAN_SLUG = "free";
 
 export function getDbPlanSlug(
   pricingPlanId: Exclude<PricingPlanId, "free">,
