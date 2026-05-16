@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DIFFICULTIES, LANGUAGES } from "@/config/constants";
+import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import type {
   AudioInputMode,
@@ -104,6 +105,7 @@ type ContentUploadCardProps = {
 };
 
 export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
+  const { requireAuth } = useAuth();
   const [sourceType, setSourceType] = useState<SourceType>("youtube");
   const [audioInputMode, setAudioInputMode] = useState<AudioInputMode>("link");
   const [url, setUrl] = useState("");
@@ -176,7 +178,17 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
     [handleFile],
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleGenerate = async (payload: UploadFormPayload) => {
+    setIsSubmitting(true);
+    try {
+      onSubmit?.(payload);
+      await new Promise((r) => setTimeout(r, 600));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -207,13 +219,7 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
       ...(showFileUpload ? { file: file! } : { url: url.trim() }),
     };
 
-    setIsSubmitting(true);
-    try {
-      onSubmit?.(payload);
-      await new Promise((r) => setTimeout(r, 600));
-    } finally {
-      setIsSubmitting(false);
-    }
+    requireAuth(() => handleGenerate(payload));
   };
 
   return (
