@@ -16,6 +16,7 @@ import {
   consumeOAuthPendingAction,
 } from "@/lib/auth/auth-actions";
 import { mapSessionToUser, mapSupabaseUser } from "@/lib/auth/map-user";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export type AuthUser = {
@@ -43,10 +44,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function fetchProfileForUser(
-  supabase: ReturnType<typeof createSupabaseBrowserClient>,
-  userId: string,
-) {
+async function fetchProfileForUser(supabase: SupabaseClient, userId: string) {
   const { data } = await supabase
     .from("profiles")
     .select("display_name, credits_balance, plans(name)")
@@ -78,6 +76,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const supabase = createSupabaseBrowserClient();
+      if (!supabase) {
+        setUser(mapSessionToUser(session, null));
+        return;
+      }
       const profile = await fetchProfileForUser(supabase, session.user.id);
       setUser(mapSessionToUser(session, profile));
     },
@@ -86,6 +88,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
 
     void (async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -162,6 +168,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       void (async () => {
         const supabase = createSupabaseBrowserClient();
+        if (!supabase) {
+          pendingCallback.current = onSuccess;
+          openAuthModal("signin");
+          return;
+        }
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
@@ -179,19 +190,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
+    if (supabase) await supabase.auth.signOut();
     setUser(null);
     pendingCallback.current = undefined;
     router.refresh();
   }, [router]);
-
-  const spendCredit = useCallback(() => {
-    if (!user || user.credits <= 0) return false;
-    const updated: AuthUser = { ...user, credits: user.credits - 1 };
-    setUser(updated);
-    persistUser(updated);
-    return true;
-  }, [user, persistUser]);
 
   return (
     <AuthContext.Provider
