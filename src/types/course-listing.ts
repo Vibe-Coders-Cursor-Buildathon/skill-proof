@@ -15,7 +15,11 @@ export type CourseListing = {
   quizCount: number;
   createdAt: string;
   author?: string;
+  /** Fallback gradient tint when no thumbnailUrl */
   thumbnailHue?: number;
+  /** Cover image for catalog cards (e.g. Unsplash or stored URL) */
+  thumbnailUrl?: string;
+  thumbnailAlt?: string;
 };
 
 export type CourseSortOption = "latest" | "oldest" | "title-asc";

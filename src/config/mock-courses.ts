@@ -1,5 +1,10 @@
 import type { CourseListing } from "@/types/course-listing";
 
+const thumb = (slug: string, alt: string) => ({
+  thumbnailUrl: `/course-thumbnails/${slug}.jpg`,
+  thumbnailAlt: alt,
+});
+
 /** Demo courses — replace with Supabase fetch when backend is ready */
 export const MOCK_COURSES: CourseListing[] = [
   {
@@ -16,7 +21,10 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-15T10:00:00Z",
     author: "SkillProof",
-    thumbnailHue: 265,
+    ...thumb(
+      "intro-machine-learning",
+      "Neural network visualization representing machine learning",
+    ),
   },
   {
     id: "2",
@@ -32,7 +40,10 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-14T14:30:00Z",
     author: "SkillProof",
-    thumbnailHue: 200,
+    ...thumb(
+      "climate-change-basics",
+      "Earth from space illustrating climate and environment",
+    ),
   },
   {
     id: "3",
@@ -48,7 +59,10 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-13T09:15:00Z",
     author: "SkillProof",
-    thumbnailHue: 145,
+    ...thumb(
+      "financial-literacy-101",
+      "Coins and savings representing personal finance",
+    ),
   },
   {
     id: "4",
@@ -64,7 +78,10 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-12T16:45:00Z",
     author: "SkillProof",
-    thumbnailHue: 25,
+    ...thumb(
+      "spanish-conversation",
+      "Colorful European city street for Spanish language learning",
+    ),
   },
   {
     id: "5",
@@ -80,7 +97,10 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-11T11:20:00Z",
     author: "SkillProof",
-    thumbnailHue: 280,
+    ...thumb(
+      "product-management-agile",
+      "Team collaborating in an agile product meeting",
+    ),
   },
   {
     id: "6",
@@ -96,7 +116,10 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-10T08:00:00Z",
     author: "SkillProof",
-    thumbnailHue: 240,
+    ...thumb(
+      "blockchain-explained",
+      "Bitcoin and cryptocurrency concept",
+    ),
   },
   {
     id: "7",
@@ -112,7 +135,10 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-09T13:30:00Z",
     author: "SkillProof",
-    thumbnailHue: 320,
+    ...thumb(
+      "public-speaking-mastery",
+      "Conference speaker presenting on stage",
+    ),
   },
   {
     id: "8",
@@ -128,7 +154,10 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-08T17:00:00Z",
     author: "SkillProof",
-    thumbnailHue: 275,
+    ...thumb(
+      "data-structures-algorithms",
+      "Developer coding on laptop for programming",
+    ),
   },
   {
     id: "9",
@@ -144,7 +173,10 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-07T10:45:00Z",
     author: "SkillProof",
-    thumbnailHue: 180,
+    ...thumb(
+      "mindfulness-meditation",
+      "Person meditating in a calm natural setting",
+    ),
   },
   {
     id: "10",
@@ -160,7 +192,10 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-06T15:20:00Z",
     author: "SkillProof",
-    thumbnailHue: 350,
+    ...thumb(
+      "digital-marketing-fundamentals",
+      "Analytics dashboard for digital marketing",
+    ),
   },
   {
     id: "11",
@@ -176,7 +211,10 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-05T12:00:00Z",
     author: "SkillProof",
-    thumbnailHue: 0,
+    ...thumb(
+      "japanese-hiragana",
+      "Japanese cultural scene for language learning",
+    ),
   },
   {
     id: "12",
@@ -192,6 +230,9 @@ export const MOCK_COURSES: CourseListing[] = [
     quizCount: 5,
     createdAt: "2026-05-04T09:30:00Z",
     author: "SkillProof",
-    thumbnailHue: 220,
+    ...thumb(
+      "leadership-teams",
+      "Diverse team collaborating on a project",
+    ),
   },
 ];
