@@ -11,27 +11,57 @@ import { generateCourseRequestSchema } from "@/types/api";
 import { courseContentSchema } from "@/types/course";
 
 const MAX_WAIT_SECS = 65;
+const MAX_GEMINI_ATTEMPTS = 3;
+
+function isParseError(err: unknown): boolean {
+  return (
+    err instanceof SyntaxError ||
+    (err instanceof Error &&
+      (err.message.includes("JSON") || err.message.includes("Unexpected")))
+  );
+}
+
+function isRateLimitError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : "";
+  return (
+    msg.includes("429") ||
+    msg.includes("quota") ||
+    msg.includes("Too Many Requests")
+  );
+}
 
 async function withGeminiRetry<T>(fn: () => Promise<T>): Promise<T> {
-  try {
-    return await fn();
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "";
-    const is429 =
-      msg.includes("429") ||
-      msg.includes("quota") ||
-      msg.includes("Too Many Requests");
-    if (!is429) throw err;
+  let lastErr: unknown;
 
-    const match = msg.match(/retry in (\d+)/i);
-    const delaySecs = match ? parseInt(match[1], 10) : 60;
+  for (let attempt = 1; attempt <= MAX_GEMINI_ATTEMPTS; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
 
-    if (delaySecs > MAX_WAIT_SECS) throw err;
+      if (attempt >= MAX_GEMINI_ATTEMPTS) break;
 
-    console.log(`[generate] 429 — waiting ${delaySecs}s then retrying...`);
-    await new Promise((r) => setTimeout(r, delaySecs * 1000));
-    return await fn();
+      if (isRateLimitError(err)) {
+        const msg = err instanceof Error ? err.message : "";
+        const match = msg.match(/retry in (\d+)/i);
+        const delaySecs = match ? parseInt(match[1], 10) : 60;
+        if (delaySecs > MAX_WAIT_SECS) break;
+        console.log(`[generate] 429 — waiting ${delaySecs}s then retrying...`);
+        await new Promise((r) => setTimeout(r, delaySecs * 1000));
+        continue;
+      }
+
+      if (isParseError(err)) {
+        console.log(`[generate] JSON parse failed (attempt ${attempt}) — retrying...`);
+        await new Promise((r) => setTimeout(r, 500));
+        continue;
+      }
+
+      break;
+    }
   }
+
+  throw lastErr;
 }
 
 function slugify(title: string, id: string): string {
@@ -144,7 +174,7 @@ export async function POST(request: Request) {
     console.log("[generate] ✅ Course saved to DB. slug:", course.slug);
 
     // Spend 1 credit now that everything succeeded
-    const creditResult = await spendCourseCredit(user.id, course.slug);
+    const creditResult = await spendCourseCredit(user.id, course.id);
     const newBalance = creditResult.ok ? creditResult.balance : balance - 1;
     console.log("[generate] ✅ Credit spent. New balance:", newBalance);
 
