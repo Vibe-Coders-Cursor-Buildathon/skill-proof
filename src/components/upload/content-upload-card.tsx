@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { DIFFICULTIES, LANGUAGES } from "@/config/constants";
 import { useAuth } from "@/contexts/auth-context";
+import { useGeneration } from "@/contexts/generation-context";
 import { cn } from "@/lib/utils";
 import type {
   AudioInputMode,
@@ -106,6 +107,7 @@ type ContentUploadCardProps = {
 
 export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
   const { requireAuth } = useAuth();
+  const { startGeneration, isOpen: isGenerating } = useGeneration();
   const [sourceType, setSourceType] = useState<SourceType>("youtube");
   const [audioInputMode, setAudioInputMode] = useState<AudioInputMode>("link");
   const [url, setUrl] = useState("");
@@ -114,7 +116,6 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
   const [difficulty, setDifficulty] = useState("beginner");
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isPdf = sourceType === "pdf";
@@ -178,14 +179,9 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
     [handleFile],
   );
 
-  const handleGenerate = async (payload: UploadFormPayload) => {
-    setIsSubmitting(true);
-    try {
-      onSubmit?.(payload);
-      await new Promise((r) => setTimeout(r, 600));
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleGenerate = (payload: UploadFormPayload) => {
+    onSubmit?.(payload);
+    startGeneration(payload);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -386,10 +382,10 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
         <Button
           type="submit"
           size="lg"
-          disabled={isSubmitting}
+          disabled={isGenerating}
           className="btn-gradient mt-6 h-12 w-full rounded-2xl border-0 text-base font-semibold"
         >
-          {isSubmitting ? (
+          {isGenerating ? (
             "Preparing your course…"
           ) : (
             <>

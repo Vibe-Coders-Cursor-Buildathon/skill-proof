@@ -88,10 +88,52 @@ Apply migrations in order in the Supabase SQL Editor (or `supabase db push`):
 
 Adjust values in `00002_plans_and_features.sql` seed data or directly in the database.
 
+## Content → course pipeline
+
+| Step | Route / file | Technology |
+|------|----------------|------------|
+| 1. Extract transcript | `POST /api/content/youtube` | YouTube caption tracks (no Gemini — fast & free) |
+| 2. Generate course JSON | `POST /api/courses/generate` | **Gemini 2.0 Flash** via `src/lib/gemini/generate-course.ts` |
+| 3. Save & display | `POST /api/courses` | Supabase |
+
+### Where to put your Gemini API key
+
+1. Copy `.env.example` → `.env.local`
+2. Set `GEMINI_API_KEY=your_key_here` (from [Google AI Studio](https://aistudio.google.com/apikey))
+3. The key is read server-side only in `src/config/env.ts` → `getServerEnv()`
+4. Never expose it in client components (`"use client"` files)
+
+### Wiring course generation (next step for your backend friend)
+
+In `src/app/api/courses/generate/route.ts`, after credit checks:
+
+```ts
+// 1. Get transcript (YouTube example)
+const transcriptRes = await fetch(`${origin}/api/content/youtube`, {
+  method: "POST",
+  body: JSON.stringify({ url: body.sourceUrl, language: body.language }),
+});
+const { transcript } = await transcriptRes.json();
+
+// 2. Call Gemini
+import { generateCourseFromContent } from "@/lib/gemini/generate-course";
+const course = await generateCourseFromContent({
+  content: transcript,
+  language: body.language,
+  difficulty: body.difficulty,
+  sourceType: "youtube",
+});
+
+// 3. spendCourseCredit(user.id) then save to Supabase
+```
+
+Frontend flow: homepage upload → auth modal (if needed) → **progress modal** (`CourseGenerationModal`) calls `/api/content/youtube` → redirects to `/dashboard`.
+
 ## API routes (auth-aware)
 
 | Route | Auth | Notes |
 |-------|------|-------|
+| `POST /api/content/youtube` | Public (for now) | Extracts transcript from YouTube URL |
 | `POST /api/courses/generate` | Required | Checks credits; spends 1 when Gemini pipeline is wired |
 | `GET /api/courses?slug=` | Optional | Published courses public via RLS |
 | `POST /api/courses` | Required | Save course |

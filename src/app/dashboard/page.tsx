@@ -8,6 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+export const metadata = {
+  title: "Dashboard | SkillProof",
+  description: "Manage your courses, credits, and certificates.",
+};
+
 export default async function DashboardPage() {
   const user = await getUser();
   if (!user) {

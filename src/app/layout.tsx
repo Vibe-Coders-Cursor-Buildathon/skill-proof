@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 
-import { AuthProvider } from "@/contexts/auth-context";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { CourseGenerationModal } from "@/components/generation/course-generation-modal";
+import { AuthProvider } from "@/contexts/auth-context";
+import { GenerationProvider } from "@/contexts/generation-context";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -30,8 +32,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>
-          {children}
-          <AuthModal />
+          <GenerationProvider>
+            {children}
+            <AuthModal />
+            <CourseGenerationModal />
+          </GenerationProvider>
         </AuthProvider>
       </body>
     </html>

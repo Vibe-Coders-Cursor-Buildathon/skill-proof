@@ -13,16 +13,21 @@ export type AuthUser = {
   name: string;
   email: string;
   avatarLetter: string;
+  credits: number;
+  plan: "free" | "individual" | "pro";
 };
 
 type AuthContextValue = {
   user: AuthUser | null;
   isAuthModalOpen: boolean;
-  /** Open the auth modal. Pass a callback to run after the user logs in. */
+  /** Open the auth modal. If the user is already logged in, fires onSuccess immediately. */
   requireAuth: (onSuccess?: () => void) => void;
   closeAuthModal: () => void;
-  login: (user: AuthUser) => void;
+  /** Returns true if a pending post-login action (e.g. course generation) was run. */
+  login: (user: AuthUser) => boolean;
   logout: () => void;
+  /** Spend one credit. Returns false if not enough credits. */
+  spendCredit: () => boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -34,7 +39,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const pendingCallback = useRef<(() => void) | undefined>(undefined);
 
-  // Restore session from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -44,18 +48,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = useCallback((u: AuthUser) => {
-    setUser(u);
+  const persistUser = useCallback((u: AuthUser) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
     } catch {
       // ignore
     }
-    setIsAuthModalOpen(false);
-    const cb = pendingCallback.current;
-    pendingCallback.current = undefined;
-    cb?.();
   }, []);
+
+  const login = useCallback(
+    (u: AuthUser): boolean => {
+      setUser(u);
+      persistUser(u);
+      setIsAuthModalOpen(false);
+      const hadPending = Boolean(pendingCallback.current);
+      const cb = pendingCallback.current;
+      pendingCallback.current = undefined;
+      cb?.();
+      return hadPending;
+    },
+    [persistUser],
+  );
 
   const logout = useCallback(() => {
     setUser(null);
@@ -83,9 +96,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     pendingCallback.current = undefined;
   }, []);
 
+  const spendCredit = useCallback(() => {
+    if (!user || user.credits <= 0) return false;
+    const updated: AuthUser = { ...user, credits: user.credits - 1 };
+    setUser(updated);
+    persistUser(updated);
+    return true;
+  }, [user, persistUser]);
+
   return (
     <AuthContext.Provider
-      value={{ user, isAuthModalOpen, requireAuth, closeAuthModal, login, logout }}
+      value={{
+        user,
+        isAuthModalOpen,
+        requireAuth,
+        closeAuthModal,
+        login,
+        logout,
+        spendCredit,
+      }}
     >
       {children}
     </AuthContext.Provider>

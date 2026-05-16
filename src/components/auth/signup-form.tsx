@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { requireSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,12 +16,19 @@ export function SignupForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const supabase = createSupabaseBrowserClient();
-
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    let supabase;
+    try {
+      supabase = requireSupabaseBrowserClient();
+    } catch (err) {
+      setLoading(false);
+      setError(err instanceof Error ? err.message : "Auth is not configured.");
+      return;
+    }
 
     const { error: signUpError } = await supabase.auth.signUp({
       email,
@@ -44,6 +51,15 @@ export function SignupForm() {
   async function handleGoogleSignup() {
     setLoading(true);
     setError(null);
+
+    let supabase;
+    try {
+      supabase = requireSupabaseBrowserClient();
+    } catch (err) {
+      setLoading(false);
+      setError(err instanceof Error ? err.message : "Auth is not configured.");
+      return;
+    }
 
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
