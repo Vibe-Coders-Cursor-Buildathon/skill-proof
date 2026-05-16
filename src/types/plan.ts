@@ -21,9 +21,13 @@ export const planSchema = z.object({
 
 export type Plan = z.infer<typeof planSchema>;
 
+export const profileRoleSchema = z.enum(["customer", "admin"]);
+export type ProfileRole = z.infer<typeof profileRoleSchema>;
+
 export const profileSchema = z.object({
   id: z.string().uuid(),
   plan_id: z.string().uuid(),
+  role: profileRoleSchema,
   credits_balance: z.number().int().min(0),
   display_name: z.string().nullable(),
   organization_name: z.string().nullable(),

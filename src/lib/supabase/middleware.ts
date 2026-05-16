@@ -40,6 +40,7 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute = pathname.startsWith("/auth");
   const isProtected =
     pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/admin") ||
     pathname.includes("/edit") ||
     pathname === "/api/courses/generate";
 

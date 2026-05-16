@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PlanFeatureError } from "@/lib/auth/plan-guard";
+import { AdminRequiredError } from "@/lib/auth/role-guard";
 
 export function unauthorized(message = "Unauthorized") {
   return NextResponse.json({ error: message }, { status: 401 });
@@ -22,6 +23,10 @@ export function handleApiError(error: unknown) {
       { error: error.message, code: "plan_feature_required", feature: error.feature },
       { status: 403 },
     );
+  }
+
+  if (error instanceof AdminRequiredError) {
+    return forbidden(error.message);
   }
 
   console.error(error);

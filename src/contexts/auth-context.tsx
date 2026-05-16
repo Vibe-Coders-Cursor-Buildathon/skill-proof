@@ -16,6 +16,7 @@ import {
   consumeOAuthPendingAction,
 } from "@/lib/auth/auth-actions";
 import { mapSessionToUser, mapSupabaseUser } from "@/lib/auth/map-user";
+import type { ProfileRole } from "@/types/plan";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -26,6 +27,7 @@ export type AuthUser = {
   avatarLetter: string;
   creditsBalance?: number;
   planName?: string;
+  role?: ProfileRole;
 };
 
 type AuthTab = "signin" | "signup";
@@ -47,7 +49,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function fetchProfileForUser(supabase: SupabaseClient, userId: string) {
   const { data } = await supabase
     .from("profiles")
-    .select("display_name, credits_balance, plans(name)")
+    .select("display_name, credits_balance, role, plans(name)")
     .eq("id", userId)
     .single();
 
