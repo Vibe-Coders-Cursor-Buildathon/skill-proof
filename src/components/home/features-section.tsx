@@ -60,7 +60,7 @@ const FEATURES = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-20 md:py-28">
+    <section id="features" className="py-[11px]">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">
