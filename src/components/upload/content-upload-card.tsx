@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DIFFICULTIES, LANGUAGES } from "@/config/constants";
+import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import type {
   AudioInputMode,
@@ -104,6 +105,7 @@ type ContentUploadCardProps = {
 };
 
 export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
+  const { requireAuth, isLoading: isAuthLoading } = useAuth();
   const [sourceType, setSourceType] = useState<SourceType>("youtube");
   const [audioInputMode, setAudioInputMode] = useState<AudioInputMode>("link");
   const [url, setUrl] = useState("");
@@ -176,7 +178,47 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
     [handleFile],
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleGenerate = async (payload: UploadFormPayload) => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/courses/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceType: payload.sourceType,
+          url: "url" in payload ? payload.url : undefined,
+          language: payload.language,
+          difficulty: payload.difficulty,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        setError("Please sign in to generate a course.");
+        return;
+      }
+      if (res.status === 402) {
+        setError("You need more credits to generate a course.");
+        return;
+      }
+      if (!res.ok) {
+        setError(
+          typeof data.error === "string"
+            ? data.error
+            : "Course generation is not available yet.",
+        );
+        return;
+      }
+
+      onSubmit?.(payload);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -207,13 +249,7 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
       ...(showFileUpload ? { file: file! } : { url: url.trim() }),
     };
 
-    setIsSubmitting(true);
-    try {
-      onSubmit?.(payload);
-      await new Promise((r) => setTimeout(r, 600));
-    } finally {
-      setIsSubmitting(false);
-    }
+    requireAuth(() => handleGenerate(payload));
   };
 
   return (
@@ -380,10 +416,12 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
         <Button
           type="submit"
           size="lg"
-          disabled={isSubmitting}
+          disabled={isAuthLoading || isSubmitting}
           className="btn-gradient mt-6 h-12 w-full rounded-2xl border-0 text-base font-semibold"
         >
-          {isSubmitting ? (
+          {isAuthLoading ? (
+            "Checking session…"
+          ) : isSubmitting ? (
             "Preparing your course…"
           ) : (
             <>
