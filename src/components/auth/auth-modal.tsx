@@ -70,7 +70,10 @@ export function AuthModal() {
     try {
       const supabase = requireSupabaseBrowserClient();
       markOAuthPending();
-      const { error: oauthError } = await signInWithGoogle(supabase, "/dashboard");
+      const { error: oauthError } = await signInWithGoogle(
+        supabase,
+        "/auth/after-login",
+      );
       if (oauthError) {
         setError(oauthError.message);
         setIsLoading(false);
