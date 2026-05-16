@@ -45,12 +45,19 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && isProtected && !pathname.startsWith("/api/")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    url.pathname = "/";
+    url.searchParams.set("auth", "signin");
     url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthRoute && pathname !== "/auth/callback") {
+  if (
+    user &&
+    isAuthRoute &&
+    pathname !== "/auth/callback" &&
+    !pathname.startsWith("/auth/login") &&
+    !pathname.startsWith("/auth/signup")
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

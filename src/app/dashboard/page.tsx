@@ -16,7 +16,7 @@ export const metadata = {
 export default async function DashboardPage() {
   const user = await getUser();
   if (!user) {
-    redirect("/auth/login");
+    redirect("/?auth=signin&redirect=/dashboard");
   }
 
   const data = await getProfileWithPlan(user.id);

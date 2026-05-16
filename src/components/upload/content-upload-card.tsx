@@ -106,8 +106,8 @@ type ContentUploadCardProps = {
 };
 
 export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
-  const { requireAuth } = useAuth();
   const { startGeneration, isOpen: isGenerating } = useGeneration();
+  const { requireAuth, isLoading: isAuthLoading } = useAuth();
   const [sourceType, setSourceType] = useState<SourceType>("youtube");
   const [audioInputMode, setAudioInputMode] = useState<AudioInputMode>("link");
   const [url, setUrl] = useState("");
@@ -382,10 +382,12 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
         <Button
           type="submit"
           size="lg"
-          disabled={isGenerating}
+          disabled={isAuthLoading || isGenerating}
           className="btn-gradient mt-6 h-12 w-full rounded-2xl border-0 text-base font-semibold"
         >
-          {isGenerating ? (
+          {isAuthLoading ? (
+            "Checking session…"
+          ) : isGenerating ? (
             "Preparing your course…"
           ) : (
             <>

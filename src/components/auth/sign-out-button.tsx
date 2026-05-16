@@ -1,19 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
 
 export function SignOutButton() {
-  const router = useRouter();
-
-  async function handleSignOut() {
-    await fetch("/api/auth/signout", { method: "POST" });
-    router.push("/auth/login");
-    router.refresh();
-  }
+  const { logout } = useAuth();
 
   return (
-    <Button type="button" variant="outline" onClick={handleSignOut}>
+    <Button type="button" variant="outline" onClick={() => logout()}>
       Sign out
     </Button>
   );

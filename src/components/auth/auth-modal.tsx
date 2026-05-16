@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Eye, EyeOff, GraduationCap, Loader2, Sparkles, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Eye, EyeOff, GraduationCap, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useAuth, type AuthUser } from "@/contexts/auth-context";
+import { useAuth } from "@/contexts/auth-context";
+import {
+  signInWithEmail,
+  signInWithGoogle,
+  signUpWithEmail,
+} from "@/lib/auth/auth-actions";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
 type Tab = "signin" | "signup";
@@ -14,33 +19,39 @@ const FREE_CREDITS = 3;
 
 export function AuthModal() {
   const { isAuthModalOpen, closeAuthModal, login } = useAuth();
-  const router = useRouter();
   const [tab, setTab] = useState<Tab>("signin");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Sign-in fields
   const [siEmail, setSiEmail] = useState("");
   const [siPassword, setSiPassword] = useState("");
 
+  // Sign-up fields
   const [suName, setSuName] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
 
   const firstInputRef = useRef<HTMLInputElement>(null);
 
+  // Reset state when modal opens
   useEffect(() => {
     if (isAuthModalOpen) {
       setTab("signin");
       setError(null);
       setIsLoading(false);
-      setSiEmail(""); setSiPassword("");
-      setSuName(""); setSuEmail(""); setSuPassword("");
+      setSiEmail("");
+      setSiPassword("");
+      setSuName("");
+      setSuEmail("");
+      setSuPassword("");
       setShowPassword(false);
       setTimeout(() => firstInputRef.current?.focus(), 80);
     }
   }, [isAuthModalOpen]);
 
+  // Close on Escape
   useEffect(() => {
     if (!isAuthModalOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -52,59 +63,69 @@ export function AuthModal() {
 
   if (!isAuthModalOpen) return null;
 
-  const doLogin = (u: AuthUser) => {
-    const ranPendingAction = login(u);
-    // If user signed in to generate a course, the pending callback opens the progress modal.
-    if (!ranPendingAction) {
-      router.push("/dashboard");
-    }
-  };
-
   const handleGoogleAuth = async () => {
     setError(null);
+    setSuccessMessage(null);
     setIsLoading(true);
+    // Simulated Google auth — replace with real OAuth later
     await new Promise((r) => setTimeout(r, 900));
-    doLogin({
+    const user: AuthUser = {
       name: "Google User",
       email: "user@gmail.com",
       avatarLetter: "G",
-      credits: FREE_CREDITS,
-      plan: "free",
-    });
+    };
+    login(user);
+    setIsLoading(false);
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
 
     if (tab === "signup") {
-      if (!suName.trim()) { setError("Please enter your name."); return; }
-      if (!suEmail.trim()) { setError("Please enter your email."); return; }
-      if (suPassword.length < 6) { setError("Password must be at least 6 characters."); return; }
+      if (!suName.trim()) {
+        setError("Please enter your name.");
+        return;
+      }
+      if (!suEmail.trim()) {
+        setError("Please enter your email.");
+        return;
+      }
+      if (suPassword.length < 6) {
+        setError("Password must be at least 6 characters.");
+        return;
+      }
+
       setIsLoading(true);
       await new Promise((r) => setTimeout(r, 900));
-      doLogin({
+      const user: AuthUser = {
         name: suName.trim(),
         email: suEmail.trim().toLowerCase(),
         avatarLetter: suName.trim()[0].toUpperCase(),
-        credits: FREE_CREDITS,
-        plan: "free",
-      });
+      };
+      login(user);
     } else {
       if (!siEmail.trim()) { setError("Please enter your email."); return; }
       if (!siPassword) { setError("Please enter your password."); return; }
       setIsLoading(true);
       await new Promise((r) => setTimeout(r, 900));
       const name = siEmail.split("@")[0];
-      doLogin({
+      const user: AuthUser = {
         name: name.charAt(0).toUpperCase() + name.slice(1),
         email: siEmail.trim().toLowerCase(),
         avatarLetter: name[0].toUpperCase(),
-        credits: FREE_CREDITS,
-        plan: "free",
-      });
+      };
+      login(user);
     }
     setIsLoading(false);
+
+    if (signInError) {
+      setError(signInError.message);
+      return;
+    }
+
+    router.refresh();
   };
 
   const email = tab === "signin" ? siEmail : suEmail;
@@ -112,12 +133,14 @@ export function AuthModal() {
 
   return (
     <>
+      {/* Backdrop */}
       <div
         className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
         onClick={closeAuthModal}
         aria-hidden
       />
 
+      {/* Panel */}
       <div
         role="dialog"
         aria-modal="true"
@@ -128,18 +151,18 @@ export function AuthModal() {
           <button
             type="button"
             onClick={closeAuthModal}
-            className="absolute top-4 right-4 z-10 flex size-8 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="Close"
           >
             <X className="size-4" />
           </button>
 
-          {/* Accent bar */}
+          {/* Top accent bar */}
           <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" />
 
           <div className="px-8 pb-8 pt-7">
-            {/* Header */}
-            <div className="mb-5 flex flex-col items-center gap-3 text-center">
+            {/* Logo */}
+            <div className="mb-6 flex flex-col items-center gap-3 text-center">
               <span className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30">
                 <GraduationCap className="size-6" strokeWidth={2} />
               </span>
@@ -155,17 +178,7 @@ export function AuthModal() {
               </div>
             </div>
 
-            {/* Free credits badge — only on signup */}
-            {tab === "signup" && (
-              <div className="mb-4 flex items-center justify-center gap-2 rounded-xl bg-indigo-50 px-4 py-2.5">
-                <Sparkles className="size-4 text-indigo-500" />
-                <span className="text-sm font-semibold text-indigo-700">
-                  Free plan includes 3 course credits — no card needed
-                </span>
-              </div>
-            )}
-
-            {/* Google */}
+            {/* Google button */}
             <button
               type="button"
               onClick={handleGoogleAuth}
@@ -181,23 +194,29 @@ export function AuthModal() {
             </button>
 
             {/* Divider */}
-            <div className="my-4 flex items-center gap-3">
+            <div className="my-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-border" />
               <span className="text-xs font-medium text-muted-foreground">or continue with email</span>
               <div className="h-px flex-1 bg-border" />
             </div>
 
             {/* Tab switcher */}
-            <div className="mb-4 flex rounded-xl bg-muted/50 p-1">
+            <div className="mb-5 flex rounded-xl bg-muted/50 p-1">
               <TabButton active={tab === "signin"} onClick={() => { setTab("signin"); setError(null); }}>
                 Sign in
               </TabButton>
-              <TabButton active={tab === "signup"} onClick={() => { setTab("signup"); setError(null); }}>
+              <TabButton
+                active={tab === "signup"}
+                onClick={() => {
+                  setTab("signup");
+                  setError(null);
+                  setSuccessMessage(null);
+                }}
+              >
                 Create account
               </TabButton>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleEmailSubmit} noValidate className="space-y-3">
               {tab === "signup" && (
                 <AuthInput
@@ -228,12 +247,18 @@ export function AuthModal() {
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder={tab === "signup" ? "At least 6 characters" : "Your password"}
+                    placeholder={
+                      tab === "signup"
+                        ? "At least 6 characters"
+                        : "Your password"
+                    }
                     value={password}
                     onChange={(e) =>
                       tab === "signin" ? setSiPassword(e.target.value) : setSuPassword(e.target.value)
                     }
-                    autoComplete={tab === "signin" ? "current-password" : "new-password"}
+                    autoComplete={
+                      tab === "signin" ? "current-password" : "new-password"
+                    }
                     disabled={isLoading}
                     className="h-11 w-full rounded-xl border border-input bg-background pr-11 pl-4 text-sm transition-all outline-none placeholder:text-muted-foreground/60 focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/15 disabled:opacity-60"
                   />
@@ -241,10 +266,14 @@ export function AuthModal() {
                     type="button"
                     tabIndex={-1}
                     onClick={() => setShowPassword((p) => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -252,6 +281,12 @@ export function AuthModal() {
               {error && (
                 <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
+                </p>
+              )}
+
+              {successMessage && (
+                <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">
+                  {successMessage}
                 </p>
               )}
 
@@ -275,14 +310,16 @@ export function AuthModal() {
 
             <p className="mt-4 text-center text-xs text-muted-foreground">
               By continuing you agree to our{" "}
-              <a href="#" className="underline underline-offset-2 hover:text-foreground">Terms</a>{" "}
+              <a href="#" className="underline underline-offset-2 hover:text-foreground">
+                Terms
+              </a>{" "}
               and{" "}
-              <a href="#" className="underline underline-offset-2 hover:text-foreground">Privacy Policy</a>
+              <a href="#" className="underline underline-offset-2 hover:text-foreground">
+                Privacy Policy
+              </a>
             </p>
           </div>
         </div>
-      </div>
-    </>
   );
 }
 
@@ -314,7 +351,9 @@ function AuthInput({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-semibold text-foreground">{label}</label>
+      <label className="block text-sm font-semibold text-foreground">
+        {label}
+      </label>
       <input
         ref={ref}
         type={type}
