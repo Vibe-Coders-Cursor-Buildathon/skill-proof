@@ -130,8 +130,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const hadOAuthPending = consumeOAuthPendingAction();
         if (hadOAuthPending || pendingCallback.current) {
           runPendingCallback();
+          router.refresh();
+          return;
         }
 
+        const redirectParam = new URL(window.location.href).searchParams.get(
+          "redirect",
+        );
+        if (redirectParam) {
+          router.push(redirectParam);
+        } else {
+          router.push("/auth/after-login");
+        }
         router.refresh();
       }
 

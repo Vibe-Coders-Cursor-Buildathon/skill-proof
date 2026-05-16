@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AdminNav } from "@/components/admin/admin-nav";
-import { PageShell } from "@/components/layout/page-shell";
+import { AdminShell } from "@/components/layout/admin-shell";
 import { getUser } from "@/lib/auth/session";
 import { isAdmin } from "@/lib/auth/role-guard";
 
@@ -25,17 +25,15 @@ export default async function AdminLayout({
   }
 
   return (
-    <PageShell>
-      <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">Admin panel</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage users, courses, and platform stats
-          </p>
-        </div>
-        <AdminNav />
-        {children}
+    <AdminShell>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight">Admin panel</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage users, courses, and platform stats
+        </p>
       </div>
-    </PageShell>
+      <AdminNav />
+      {children}
+    </AdminShell>
   );
 }

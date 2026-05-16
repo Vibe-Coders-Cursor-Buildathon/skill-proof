@@ -52,15 +52,30 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (user && pathname.startsWith("/dashboard")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role === "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
+  }
+
   if (
     user &&
     isAuthRoute &&
     pathname !== "/auth/callback" &&
+    pathname !== "/auth/after-login" &&
     !pathname.startsWith("/auth/login") &&
     !pathname.startsWith("/auth/signup")
   ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/auth/after-login";
     return NextResponse.redirect(url);
   }
 
