@@ -28,7 +28,7 @@ const STEPS = [
 export function HowItWorksSection() {
   return (
     <section id="how-it-works" className="pb-20 md:pb-28">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 pt-[110px] pb-[110px] sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">
             How it works
