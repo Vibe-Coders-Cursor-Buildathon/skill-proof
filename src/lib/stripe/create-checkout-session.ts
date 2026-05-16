@@ -1,7 +1,7 @@
 import { getCreditPurchaseQuote } from "@/config/credit-purchase";
 import type { PricingPlanId } from "@/config/pricing";
-import { getPricingPlan } from "@/config/pricing";
 import { isPaidPricingPlanId } from "@/config/stripe-plans";
+import { getStripePriceId } from "@/config/stripe-prices";
 import { getStripe } from "@/lib/stripe/server";
 
 type CreateCheckoutSessionParams = {
@@ -21,8 +21,8 @@ export async function createStripeCheckoutSession({
     throw new Error("Free plan does not require payment");
   }
 
-  const plan = getPricingPlan(pricingPlanId);
   const stripe = getStripe();
+  const priceId = getStripePriceId(pricingPlanId);
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
@@ -31,22 +31,12 @@ export async function createStripeCheckoutSession({
     line_items: [
       {
         quantity: 1,
-        price_data: {
-          currency: "usd",
-          unit_amount: plan.priceCents,
-          recurring: { interval: "month" },
-          product_data: {
-            name: `SkillProof ${plan.name}`,
-            description: plan.tagline,
-            metadata: {
-              pricing_plan_id: pricingPlanId,
-            },
-          },
-        },
+        price: priceId,
       },
     ],
     metadata: {
       user_id: userId,
+      checkout_type: "plan",
       pricing_plan_id: pricingPlanId,
     },
     subscription_data: {

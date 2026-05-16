@@ -75,21 +75,29 @@ Apply migrations in order in the Supabase SQL Editor (or `supabase db push`):
 - **Dashboard:** `/dashboard` (credits balance, current plan)
 - **Profile roles:** `customer` (default) or `admin` on `profiles.role`. Plan features still control product capabilities; admins get the **Admin panel** at `/admin`.
 - **Dev admin account:** After migrations, run `npm run seed:admin`, then sign in with `admin@gmail.com` / `admin`. Change this password in production.
-- **4 plans:** `basic`, `professional`, `premium`, `enterprise`
+- **4 plans:** `free`, `individual`, `business`, `enterprise` (see migration `00010_align_plans_with_pricing.sql`)
 - **Feature flags** live in `plans.features` (JSONB) — edit in Supabase without code changes
 - **TypeScript mirror:** [`src/config/plan-features.ts`](src/config/plan-features.ts)
-- **Credits:** 1 credit per course generation; grants on signup from plan's `included_credits_monthly`
+- **Credits:** 1 credit per course generation; grants on signup (3 free) and on first paid subscription checkout
+
+### Plan tiers (monthly credits)
+
+| Plan | Slug | Credits/mo | Publish limit |
+|------|------|------------|---------------|
+| Free | `free` | 3 | 0 |
+| Individual | `individual` | 20 | 0 |
+| Business | `business` | 40 | 4 |
+| Enterprise | `enterprise` | 100 | 10 |
 
 ### Plan feature keys
 
-| Key | Basic | Pro / Premium | Enterprise |
-|-----|-------|---------------|------------|
-| `can_edit_course` | no | yes | yes |
-| `can_publish_course` | no | yes | yes |
-| `can_add_university_stamp` | no | no | yes |
-| `can_purchase_credits` | yes | yes | yes |
-
-Adjust values in `00002_plans_and_features.sql` seed data or directly in the database.
+| Key | Free | Individual | Business | Enterprise |
+|-----|------|------------|----------|------------|
+| `can_edit_course` | no | yes | yes | yes |
+| `can_issue_certificate` | no | yes | yes | yes |
+| `can_publish_course` | no | no | yes | yes |
+| `can_add_university_stamp` | no | no | yes | yes |
+| `max_published_courses` | 0 | 0 | 4 | 10 |
 
 ## Content → course pipeline
 
@@ -148,7 +156,12 @@ Frontend flow: homepage upload → auth modal (if needed) → **progress modal**
 
 ## Stripe payments (sandbox / test mode)
 
-SkillProof uses **Stripe Checkout** for subscriptions. Plans on `/pricing` → `/checkout` → pay → webhook updates Supabase profile + credits.
+SkillProof uses **Stripe Checkout** for:
+
+- **Subscriptions** (Individual / Business / Enterprise) — Price IDs from your Stripe Product Catalog
+- **Credit top-up** (one-time) — dynamic `price_data` in code (unchanged; do not replace with catalog prices)
+
+Flow: `/pricing` → `/checkout` → pay → webhook or success page updates Supabase profile + credits.
 
 ### 1. Create a Stripe account
 
@@ -166,9 +179,33 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxxxxx
 
 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is optional for hosted Checkout (redirect flow).
 
-### 3. Webhook secret (optional locally, required in production)
+### 3. Subscription Product Catalog (required for paid plans)
 
-**Quick local test (no webhook):** If you only set `STRIPE_SECRET_KEY`, paying on Checkout still works. After payment, the **success page** confirms the session with Stripe and updates your plan/credits. You do **not** need `STRIPE_WEBHOOK_SECRET` for that.
+In **Test mode**, create three products with **monthly recurring** prices:
+
+| Product | Price |
+|---------|-------|
+| SkillProof Individual | $10.00 USD / month |
+| SkillProof Business | $20.00 USD / month |
+| SkillProof Enterprise | $35.00 USD / month |
+
+Optional Price metadata: `pricing_plan_id` = `individual` | `business` | `enterprise`.
+
+Add to `.env.local`:
+
+```env
+STRIPE_PRICE_INDIVIDUAL=price_xxxxxxxx
+STRIPE_PRICE_BUSINESS=price_xxxxxxxx
+STRIPE_PRICE_ENTERPRISE=price_xxxxxxxx
+```
+
+Free plan is not sold in Stripe — new users get `free` via signup trigger.
+
+### 4. Webhook secret (optional locally, recommended)
+
+**Quick local test (no webhook):** If you only set `STRIPE_SECRET_KEY` and the three `STRIPE_PRICE_*` vars, subscription and **credit top-up** Checkout still work. After payment, the **success page** confirms the session with Stripe and updates your plan/credits. You do **not** need `STRIPE_WEBHOOK_SECRET` for that.
+
+**Same webhook** handles both `checkout_type: "credits"` and plan subscriptions (`checkout.session.completed`). Adding `STRIPE_WEBHOOK_SECRET` does not break top-up — it makes fulfillment reliable if the user closes the tab before the success page.
 
 **Recommended for production** — install [Stripe CLI](https://stripe.com/docs/stripe-cli) for local webhook testing too:
 
@@ -191,18 +228,21 @@ Restart `npm run dev` after changing env vars.
 - Events: `checkout.session.completed`
 - Copy the signing secret into your host’s env as `STRIPE_WEBHOOK_SECRET`
 
-### 4. Test a payment
+### 5. Test a payment
 
-1. `npm run dev` + `stripe listen …` (separate terminal)
-2. Sign in → `/pricing` → choose a paid plan → **Pay**
-3. On Stripe Checkout use test card: `4242 4242 4242 4242`, any future expiry, any CVC, any ZIP
-4. After success you should land on `/checkout/success` and see updated credits on `/dashboard`
+1. Apply migration `00010_align_plans_with_pricing.sql` in Supabase
+2. `npm run dev` + optional `stripe listen …` (separate terminal)
+3. Sign in → `/pricing` → choose a paid plan → **Pay**
+4. On Stripe Checkout use test card: `4242 4242 4242 4242`, any future expiry, any CVC, any ZIP
+5. After success you should land on `/checkout/success` and see updated credits on `/dashboard`
+6. Regression: credit top-up from dashboard still grants credits (`reason: credit_purchase`)
 
-| Pricing UI plan | DB plan slug | Test price |
-|-----------------|--------------|------------|
-| Individual | `professional` | $10/mo |
-| Business | `premium` | $20/mo |
-| Enterprise | `enterprise` | $35/mo |
+| Pricing UI plan | DB plan slug | Stripe env var |
+|-----------------|--------------|----------------|
+| Free | `free` | (no Stripe) |
+| Individual | `individual` | `STRIPE_PRICE_INDIVIDUAL` |
+| Business | `business` | `STRIPE_PRICE_BUSINESS` |
+| Enterprise | `enterprise` | `STRIPE_PRICE_ENTERPRISE` |
 
 More test cards: [Stripe testing docs](https://docs.stripe.com/testing)
 
