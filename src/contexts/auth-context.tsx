@@ -16,6 +16,7 @@ import {
   consumeOAuthPendingAction,
 } from "@/lib/auth/auth-actions";
 import { mapSessionToUser, mapSupabaseUser } from "@/lib/auth/map-user";
+import type { ProfileRole } from "@/types/plan";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -26,6 +27,7 @@ export type AuthUser = {
   avatarLetter: string;
   creditsBalance?: number;
   planName?: string;
+  role?: ProfileRole;
 };
 
 type AuthTab = "signin" | "signup";
@@ -39,6 +41,7 @@ type AuthContextValue = {
   openAuthModal: (tab?: AuthTab) => void;
   closeAuthModal: () => void;
   markOAuthPending: () => void;
+  updateCredits: (newBalance: number) => void;
   logout: () => Promise<void>;
 };
 
@@ -47,7 +50,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function fetchProfileForUser(supabase: SupabaseClient, userId: string) {
   const { data } = await supabase
     .from("profiles")
-    .select("display_name, credits_balance, plans(name)")
+    .select("display_name, credits_balance, role, plans(name)")
     .eq("id", userId)
     .single();
 
@@ -128,8 +131,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const hadOAuthPending = consumeOAuthPendingAction();
         if (hadOAuthPending || pendingCallback.current) {
           runPendingCallback();
+          router.refresh();
+          return;
         }
 
+        const redirectParam = new URL(window.location.href).searchParams.get(
+          "redirect",
+        );
+        if (redirectParam) {
+          router.push(redirectParam);
+        } else {
+          router.push("/auth/after-login");
+        }
         router.refresh();
       }
 
@@ -193,6 +206,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user, isLoading, openAuthModal],
   );
 
+  const updateCredits = useCallback((newBalance: number) => {
+    setUser((prev) => prev ? { ...prev, creditsBalance: newBalance } : prev);
+  }, []);
+
   const logout = useCallback(async () => {
     const supabase = createSupabaseBrowserClient();
     if (supabase) await supabase.auth.signOut();
@@ -213,6 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         openAuthModal,
         closeAuthModal,
         markOAuthPending,
+        updateCredits,
         logout,
       }}
     >
