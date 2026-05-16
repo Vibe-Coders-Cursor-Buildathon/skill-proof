@@ -58,9 +58,9 @@ const PLAN_ACCENT: Record<
   },
 };
 
-export function PricingSection() {
+export function PricingSection({ className }: { className?: string }) {
   return (
-    <section id="pricing" className="relative overflow-hidden py-3">
+    <section className={cn("relative overflow-hidden", className ?? "py-3")}>
       <div
         aria-hidden
         className="pricing-surface pointer-events-none absolute inset-0 -z-10"
@@ -259,7 +259,7 @@ function PricingCard({ plan }: { plan: PricingPlan }) {
             plan.id === "enterprise" ? (
               <a href="mailto:hello@skillproof.app" />
             ) : (
-              <a href="#upload" />
+              <a href="/#upload" />
             )
           }
         >

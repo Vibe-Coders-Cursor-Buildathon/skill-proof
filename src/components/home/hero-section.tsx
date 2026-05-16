@@ -18,7 +18,7 @@ export function HeroSection() {
           className="mb-6 gap-2 rounded-full border-0 bg-white/90 px-4 py-1.5 text-sm font-medium text-primary shadow-md shadow-indigo-500/10 backdrop-blur-sm"
         >
           <Sparkles className="size-4" />
-          Powered by Gemini 2.5 Flash
+          Create · Learn · Get certified
         </Badge>
 
         <h1 className="text-balance text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-[3.5rem]">
