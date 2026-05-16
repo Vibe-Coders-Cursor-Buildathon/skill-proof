@@ -1,22 +1,15 @@
 import Link from "next/link";
-import { FileText, FileUp, Layers, Mic, Video } from "lucide-react";
+import { Layers } from "lucide-react";
 
+import { CourseCardThumbnail } from "@/components/courses/course-card-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import {
   formatCourseDate,
   getDifficultyLabel,
   getLanguageLabel,
-  SOURCE_TYPE_LABELS,
 } from "@/lib/courses/labels";
 import { cn } from "@/lib/utils";
-import type { CourseListing, CourseSourceType } from "@/types/course-listing";
-
-const SOURCE_ICONS: Record<CourseSourceType, typeof Video> = {
-  youtube: Video,
-  article: FileText,
-  pdf: FileUp,
-  audio: Mic,
-};
+import type { CourseListing } from "@/types/course-listing";
 
 type CourseCardProps = {
   course: CourseListing;
@@ -24,9 +17,6 @@ type CourseCardProps = {
 };
 
 export function CourseCard({ course, className }: CourseCardProps) {
-  const SourceIcon = SOURCE_ICONS[course.sourceType];
-  const hue = course.thumbnailHue ?? 275;
-
   return (
     <Link
       href={`/course/${course.slug}`}
@@ -35,23 +25,7 @@ export function CourseCard({ course, className }: CourseCardProps) {
         className,
       )}
     >
-      {/* Thumbnail */}
-      <div
-        className="relative flex h-36 items-end p-4"
-        style={{
-          background: `linear-gradient(135deg, oklch(0.75 0.12 ${hue}) 0%, oklch(0.55 0.18 ${hue}) 50%, oklch(0.45 0.15 ${hue + 20}) 100%)`,
-        }}
-      >
-        <span className="flex size-10 items-center justify-center rounded-xl bg-white/20 text-white backdrop-blur-sm">
-          <SourceIcon className="size-5" strokeWidth={1.75} />
-        </span>
-        <Badge
-          variant="secondary"
-          className="absolute top-3 right-3 border-0 bg-white/90 text-xs font-medium text-foreground shadow-sm"
-        >
-          {SOURCE_TYPE_LABELS[course.sourceType]}
-        </Badge>
-      </div>
+      <CourseCardThumbnail course={course} />
 
       <div className="flex flex-1 flex-col p-4">
         <div className="flex flex-wrap gap-1.5">
