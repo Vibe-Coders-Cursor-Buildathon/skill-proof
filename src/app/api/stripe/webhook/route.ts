@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 
 import type { PricingPlanId } from "@/config/pricing";
 import { isPricingPlanId } from "@/config/pricing";
+import { fulfillCreditPurchase } from "@/lib/stripe/fulfill-credits";
 import { fulfillPlanPurchase } from "@/lib/stripe/fulfill-plan";
 import { getStripe, getStripeWebhookSecret } from "@/lib/stripe/server";
 
@@ -47,10 +48,37 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const userId =
     session.metadata?.user_id ?? session.client_reference_id ?? null;
-  const pricingPlanId = session.metadata?.pricing_plan_id;
 
-  if (!userId || !pricingPlanId || !isPricingPlanId(pricingPlanId)) {
-    console.error("[stripe webhook] missing metadata", {
+  if (!userId) {
+    console.error("[stripe webhook] missing user_id", { sessionId: session.id });
+    return;
+  }
+
+  const checkoutType = session.metadata?.checkout_type ?? "plan";
+
+  if (checkoutType === "credits") {
+    const creditAmount = Number(session.metadata?.credit_amount);
+    const priceCents = Number(session.metadata?.price_cents);
+    if (
+      !Number.isInteger(creditAmount) ||
+      creditAmount < 1 ||
+      !Number.isInteger(priceCents)
+    ) {
+      console.error("[stripe webhook] invalid credits metadata", session.id);
+      return;
+    }
+    await fulfillCreditPurchase({
+      userId,
+      credits: creditAmount,
+      priceCents,
+      stripeSessionId: session.id,
+    });
+    return;
+  }
+
+  const pricingPlanId = session.metadata?.pricing_plan_id;
+  if (!pricingPlanId || !isPricingPlanId(pricingPlanId)) {
+    console.error("[stripe webhook] missing plan metadata", {
       userId,
       pricingPlanId,
       sessionId: session.id,

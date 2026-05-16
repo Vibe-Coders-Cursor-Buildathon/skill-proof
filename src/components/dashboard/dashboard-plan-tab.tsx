@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, Check, Crown, Sparkles, Zap } from "lucide-react";
+import { Suspense } from "react";
+import { ArrowRight, Check, Crown, Sparkles } from "lucide-react";
 
+import { BuyCreditsSection } from "@/components/dashboard/buy-credits-section";
+import { CreditsPurchaseSuccess } from "@/components/dashboard/credits-purchase-success";
 import { PRICING_PLANS } from "@/config/pricing";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +30,12 @@ export function DashboardPlanTab({
 
   return (
     <div className="space-y-6">
+      <Suspense fallback={null}>
+        <CreditsPurchaseSuccess />
+      </Suspense>
+
+      <BuyCreditsSection />
+
       <div
         className={cn(
           "glass-card overflow-hidden p-6 sm:p-8",
@@ -67,14 +76,13 @@ export function DashboardPlanTab({
           </div>
         </div>
         {lowCredits && (
-          <Link
-            href="/#pricing"
-            className="btn-gradient mt-6 inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold"
-          >
-            <Zap className="size-4" />
-            Get more credits
-            <ArrowRight className="size-4 opacity-80" />
-          </Link>
+          <p className="mt-6 text-sm text-amber-800">
+            Running low — buy extra credits below or{" "}
+            <Link href="/pricing" className="font-semibold underline">
+              upgrade your plan
+            </Link>
+            .
+          </p>
         )}
       </div>
 
@@ -119,7 +127,7 @@ export function DashboardPlanTab({
         </ul>
 
         <Link
-          href="/#pricing"
+          href="/pricing"
           className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-indigo-700"
         >
           Compare all plans

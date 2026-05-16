@@ -1,3 +1,4 @@
+import { getCreditPurchaseQuote } from "@/config/credit-purchase";
 import type { PricingPlanId } from "@/config/pricing";
 import { getPricingPlan } from "@/config/pricing";
 import { isPaidPricingPlanId } from "@/config/stripe-plans";
@@ -56,6 +57,64 @@ export async function createStripeCheckoutSession({
     },
     success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/checkout?plan=${pricingPlanId}&canceled=1`,
+    allow_promotion_codes: true,
+  });
+
+  if (!session.url) {
+    throw new Error("Stripe did not return a checkout URL");
+  }
+
+  return session;
+}
+
+type CreateCreditsCheckoutParams = {
+  userId: string;
+  userEmail: string;
+  credits: number;
+  origin: string;
+};
+
+export async function createStripeCreditsCheckoutSession({
+  userId,
+  userEmail,
+  credits,
+  origin,
+}: CreateCreditsCheckoutParams) {
+  const quote = getCreditPurchaseQuote(credits);
+  const stripe = getStripe();
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer_email: userEmail,
+    client_reference_id: userId,
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "usd",
+          unit_amount: quote.priceCents,
+          product_data: {
+            name: `${quote.credits} SkillProof Credits`,
+            description:
+              quote.savingsCents > 0
+                ? `Bundle price — save $${(quote.savingsCents / 100).toFixed(2)} vs $1/credit`
+                : `${quote.credits} course generation credits at $1 each`,
+            metadata: {
+              checkout_type: "credits",
+              credit_amount: String(quote.credits),
+            },
+          },
+        },
+      },
+    ],
+    metadata: {
+      user_id: userId,
+      checkout_type: "credits",
+      credit_amount: String(quote.credits),
+      price_cents: String(quote.priceCents),
+    },
+    success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&type=credits`,
+    cancel_url: `${origin}/checkout?type=credits&credits=${quote.credits}&canceled=1`,
     allow_promotion_codes: true,
   });
 

@@ -1,16 +1,25 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import {
+  getCreditPurchaseQuote,
+  isValidCreditPurchaseAmount,
+} from "@/config/credit-purchase";
 import { isPricingPlanId } from "@/config/pricing";
 import { isPaidPricingPlanId } from "@/config/stripe-plans";
 import { handleApiError, unauthorized } from "@/lib/api/errors";
+import { requireFeature } from "@/lib/auth/plan-guard";
 import { getUser } from "@/lib/auth/session";
-import { createStripeCheckoutSession } from "@/lib/stripe/create-checkout-session";
+import {
+  createStripeCheckoutSession,
+  createStripeCreditsCheckoutSession,
+} from "@/lib/stripe/create-checkout-session";
 import { isStripeConfigured } from "@/lib/stripe/server";
 
-const bodySchema = z.object({
-  planId: z.string(),
-});
+const bodySchema = z.union([
+  z.object({ planId: z.string() }),
+  z.object({ credits: z.number().int() }),
+]);
 
 export async function POST(request: Request) {
   try {
@@ -38,6 +47,31 @@ export async function POST(request: Request) {
       );
     }
 
+    const origin = new URL(request.url).origin;
+
+    if ("credits" in parsed.data) {
+      const { credits } = parsed.data;
+      if (!isValidCreditPurchaseAmount(credits)) {
+        return NextResponse.json(
+          { error: "Minimum purchase is 5 credits" },
+          { status: 400 },
+        );
+      }
+
+      await requireFeature(user.id, "can_purchase_credits");
+
+      getCreditPurchaseQuote(credits);
+
+      const session = await createStripeCreditsCheckoutSession({
+        userId: user.id,
+        userEmail: user.email,
+        credits,
+        origin,
+      });
+
+      return NextResponse.json({ url: session.url });
+    }
+
     const { planId } = parsed.data;
     if (!isPricingPlanId(planId) || !isPaidPricingPlanId(planId)) {
       return NextResponse.json(
@@ -46,7 +80,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const origin = new URL(request.url).origin;
     const session = await createStripeCheckoutSession({
       userId: user.id,
       userEmail: user.email,

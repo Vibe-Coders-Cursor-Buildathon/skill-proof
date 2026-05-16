@@ -13,7 +13,7 @@ export const metadata = {
 };
 
 type SuccessPageProps = {
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: Promise<{ session_id?: string; type?: string }>;
 };
 
 export default async function CheckoutSuccessPage({
@@ -24,20 +24,34 @@ export default async function CheckoutSuccessPage({
     redirect("/?auth=signin");
   }
 
-  const { session_id: sessionId } = await searchParams;
-  let planName: string | null = null;
-  let activatedNow = false;
+  const { session_id: sessionId, type } = await searchParams;
+  const isCredits = type === "credits";
+
+  let planMessage: string | null = null;
+  let creditsPurchased: number | null = null;
 
   if (sessionId && isStripeConfigured()) {
     try {
       const result = await confirmCheckoutSessionForUser(sessionId, user.id);
-      if (result.fulfilled && result.planId) {
-        planName = getPricingPlan(result.planId).name;
-        activatedNow = !result.alreadyFulfilled;
+      if (result.fulfilled) {
+        if (result.checkoutType === "credits") {
+          creditsPurchased = result.creditsGranted;
+        } else {
+          const planName = getPricingPlan(result.planId).name;
+          planMessage = result.alreadyFulfilled
+            ? `Your ${planName} plan is active.`
+            : `Your ${planName} plan is active and credits have been added.`;
+        }
       }
     } catch (error) {
       console.error("[checkout success] confirm session failed", error);
     }
+  }
+
+  if (isCredits) {
+    redirect(
+      `/dashboard?tab=plan&credits_purchased=${creditsPurchased ?? 1}`,
+    );
   }
 
   return (
@@ -50,11 +64,8 @@ export default async function CheckoutSuccessPage({
           Payment successful
         </h1>
         <p className="mt-3 text-muted-foreground">
-          {planName && activatedNow
-            ? `Your ${planName} plan is active and credits have been added to your account.`
-            : planName
-              ? `Your ${planName} plan is active.`
-              : "Thank you! If credits are not visible yet, refresh your dashboard in a moment."}
+          {planMessage ??
+            "Thank you! If credits are not visible yet, refresh your dashboard in a moment."}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link

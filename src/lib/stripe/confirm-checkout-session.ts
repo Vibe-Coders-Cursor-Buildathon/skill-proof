@@ -1,34 +1,86 @@
 import type { PricingPlanId } from "@/config/pricing";
 import { isPricingPlanId } from "@/config/pricing";
+import { fulfillCreditPurchase } from "@/lib/stripe/fulfill-credits";
 import { fulfillPlanPurchase } from "@/lib/stripe/fulfill-plan";
 import { getStripe } from "@/lib/stripe/server";
 
+export type ConfirmCheckoutResult =
+  | {
+      fulfilled: false;
+      reason:
+        | "session_not_complete"
+        | "user_mismatch"
+        | "invalid_checkout";
+    }
+  | {
+      fulfilled: true;
+      checkoutType: "plan";
+      alreadyFulfilled: boolean;
+      planId: PricingPlanId;
+      creditsGranted?: number;
+    }
+  | {
+      fulfilled: true;
+      checkoutType: "credits";
+      alreadyFulfilled: boolean;
+      creditsGranted: number;
+    };
+
 /**
- * Confirms a completed Checkout session and fulfills the plan.
- * Used on the success page so local dev works without Stripe webhooks.
+ * Confirms a completed Checkout session and fulfills plan or credits.
  * Idempotent — safe if the webhook already ran.
  */
 export async function confirmCheckoutSessionForUser(
   sessionId: string,
   userId: string,
-) {
+): Promise<ConfirmCheckoutResult> {
   const stripe = getStripe();
   const session = await stripe.checkout.sessions.retrieve(sessionId);
 
   if (session.status !== "complete") {
-    return { fulfilled: false as const, reason: "session_not_complete" as const };
+    return { fulfilled: false, reason: "session_not_complete" };
   }
 
   const sessionUserId =
     session.metadata?.user_id ?? session.client_reference_id ?? null;
 
   if (!sessionUserId || sessionUserId !== userId) {
-    return { fulfilled: false as const, reason: "user_mismatch" as const };
+    return { fulfilled: false, reason: "user_mismatch" };
+  }
+
+  const checkoutType = session.metadata?.checkout_type ?? "plan";
+
+  if (checkoutType === "credits") {
+    const creditAmount = Number(session.metadata?.credit_amount);
+    const priceCents = Number(session.metadata?.price_cents);
+
+    if (
+      !Number.isInteger(creditAmount) ||
+      creditAmount < 1 ||
+      !Number.isInteger(priceCents) ||
+      priceCents < 1
+    ) {
+      return { fulfilled: false, reason: "invalid_checkout" };
+    }
+
+    const result = await fulfillCreditPurchase({
+      userId,
+      credits: creditAmount,
+      priceCents,
+      stripeSessionId: session.id,
+    });
+
+    return {
+      fulfilled: true,
+      checkoutType: "credits",
+      alreadyFulfilled: result.alreadyFulfilled,
+      creditsGranted: result.creditsGranted,
+    };
   }
 
   const pricingPlanId = session.metadata?.pricing_plan_id;
   if (!pricingPlanId || !isPricingPlanId(pricingPlanId)) {
-    return { fulfilled: false as const, reason: "invalid_plan" as const };
+    return { fulfilled: false, reason: "invalid_checkout" };
   }
 
   const result = await fulfillPlanPurchase({
@@ -38,10 +90,11 @@ export async function confirmCheckoutSessionForUser(
   });
 
   return {
-    fulfilled: true as const,
+    fulfilled: true,
+    checkoutType: "plan",
     alreadyFulfilled: result.alreadyFulfilled,
+    planId: pricingPlanId,
     creditsGranted:
       "creditsGranted" in result ? result.creditsGranted : undefined,
-    planId: pricingPlanId,
   };
 }
