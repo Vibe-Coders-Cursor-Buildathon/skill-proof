@@ -16,20 +16,17 @@ export function Footer() {
             </p>
           </div>
         </div>
-        <div className="flex gap-8 text-sm font-medium text-muted-foreground">
-          <Link href="#pricing" className="transition-colors hover:text-primary">
+        <div className="flex flex-wrap justify-center gap-6 text-sm font-medium text-muted-foreground sm:gap-8">
+          <Link href="/courses" className="transition-colors hover:text-primary">
+            Courses
+          </Link>
+          <Link href="/#pricing" className="transition-colors hover:text-primary">
             Pricing
           </Link>
-          <Link
-            href="#features"
-            className="transition-colors hover:text-primary"
-          >
+          <Link href="/#features" className="transition-colors hover:text-primary">
             Features
           </Link>
-          <Link
-            href="#how-it-works"
-            className="transition-colors hover:text-primary"
-          >
+          <Link href="/#how-it-works" className="transition-colors hover:text-primary">
             How it works
           </Link>
         </div>
