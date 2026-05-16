@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, Layers, Video, FileText, Link2 } from "lucide-react";
+import { ArrowUpRight, Layers, Video, FileText, Link2, Mic } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,12 +13,14 @@ const SOURCE_ICONS = {
   youtube: Video,
   pdf: FileText,
   article: Link2,
+  audio: Mic,
 };
 
 const SOURCE_HUES: Record<string, number> = {
   youtube: 275,
   pdf: 155,
   article: 220,
+  audio: 30,
 };
 
 const DIFFICULTY_STYLES: Record<string, string> = {

@@ -10,6 +10,8 @@ export type PendingUploadDraft = {
   language: string;
   difficulty: string;
   audioInputMode?: UploadFormPayload["audioInputMode"];
+  /** True when user selected a file before sign-in (file cannot be restored from sessionStorage). */
+  expectsFile?: boolean;
 };
 
 export function savePendingUpload(payload: UploadFormPayload) {
@@ -21,6 +23,7 @@ export function savePendingUpload(payload: UploadFormPayload) {
     difficulty: payload.difficulty,
     ...(payload.audioInputMode ? { audioInputMode: payload.audioInputMode } : {}),
     ...(payload.url ? { url: payload.url } : {}),
+    ...(payload.file ? { expectsFile: true } : {}),
   };
 
   try {

@@ -134,6 +134,9 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
     setDifficulty(draft.difficulty);
     if (draft.url) setUrl(draft.url);
     if (draft.audioInputMode) setAudioInputMode(draft.audioInputMode);
+    if (draft.expectsFile) {
+      setError("Please re-upload your file to continue.");
+    }
   }, [user, isAuthLoading]);
 
   const isPdf = sourceType === "pdf";
