@@ -20,6 +20,7 @@ type DashboardOverviewTabProps = {
   creditsMax: number;
   planName: string;
   onViewAllCourses: () => void;
+  canEditCourse?: boolean;
 };
 
 const QUICK_ACTIONS = [
@@ -53,6 +54,7 @@ export function DashboardOverviewTab({
   creditsMax,
   planName,
   onViewAllCourses,
+  canEditCourse = false,
 }: DashboardOverviewTabProps) {
   const recentCourses = courses.slice(0, 3);
 
@@ -123,7 +125,11 @@ export function DashboardOverviewTab({
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {recentCourses.map((course) => (
-              <DashboardCourseCard key={course.id} course={course} />
+              <DashboardCourseCard
+                key={course.id}
+                course={course}
+                canEdit={canEditCourse}
+              />
             ))}
           </div>
         )}

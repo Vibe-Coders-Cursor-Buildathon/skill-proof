@@ -43,6 +43,13 @@ export type SourceType = z.infer<typeof sourceTypeSchema>;
 export const difficultySchema = z.enum(["beginner", "intermediate", "expert"]);
 export type Difficulty = z.infer<typeof difficultySchema>;
 
+export const publishStatusSchema = z.enum([
+  "draft",
+  "pending",
+  "approved",
+  "rejected",
+]);
+
 export const courseRecordSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),
@@ -53,6 +60,8 @@ export const courseRecordSchema = z.object({
   difficulty: difficultySchema,
   content: courseContentSchema,
   created_at: z.string(),
+  publish_status: publishStatusSchema.optional(),
+  is_published: z.boolean().optional(),
 });
 
 export type CourseRecord = z.infer<typeof courseRecordSchema>;

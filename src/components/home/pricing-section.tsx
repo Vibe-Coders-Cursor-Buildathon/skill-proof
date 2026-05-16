@@ -200,7 +200,7 @@ function PricingCard({ plan }: { plan: PricingPlan }) {
             <span className="flex items-center gap-2">
               <Check className="size-4 shrink-0 text-indigo-600" strokeWidth={2.5} />
               Publish {plan.publishLimit} public course
-              {plan.publishLimit === 1 ? "" : "s"}
+              {plan.publishLimit === 1 ? "" : "s"} (admin-approved)
             </span>
           </div>
         )}

@@ -3,11 +3,14 @@ import { ArrowRight, Sparkles } from "lucide-react";
 
 import { CourseCard } from "@/components/courses/course-card";
 import { Button } from "@/components/ui/button";
-import { MOCK_COURSES } from "@/config/mock-courses";
-import { getLatestCourses } from "@/lib/courses/filter";
+import { getPublicCourses } from "@/lib/courses/get-public-courses";
 
-export function LatestCoursesSection() {
-  const latest = getLatestCourses(MOCK_COURSES, 6);
+export async function LatestCoursesSection() {
+  const latest = await getPublicCourses(6);
+
+  if (latest.length === 0) {
+    return null;
+  }
 
   return (
     <section id="courses" className="py-[11px]">

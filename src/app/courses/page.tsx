@@ -1,5 +1,6 @@
 import { CoursesCatalog } from "@/components/courses/courses-catalog";
 import { PageShell } from "@/components/layout/page-shell";
+import { getPublicCourses } from "@/lib/courses/get-public-courses";
 
 export const metadata = {
   title: "Courses | SkillProof",
@@ -7,7 +8,11 @@ export const metadata = {
     "Browse public micro-courses created from YouTube, PDFs, articles, and audio.",
 };
 
-export default function CoursesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function CoursesPage() {
+  const courses = await getPublicCourses();
+
   return (
     <PageShell wide>
       <div className="pb-16 pt-4 md:pb-24 md:pt-8">
@@ -20,12 +25,13 @@ export default function CoursesPage() {
           </h1>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
             Filter by source, difficulty, and language. Every course includes
-            flashcards, quizzes, and a certificate path.
+            flashcards, quizzes, and a certificate path. Only admin-approved
+            courses appear here.
           </p>
         </div>
 
         <div className="mt-12">
-          <CoursesCatalog />
+          <CoursesCatalog initialCourses={courses} />
         </div>
       </div>
     </PageShell>

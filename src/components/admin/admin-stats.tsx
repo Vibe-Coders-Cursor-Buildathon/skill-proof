@@ -1,12 +1,13 @@
 "use client";
 
-import { BookOpen, GraduationCap, Sparkles, Users } from "lucide-react";
+import { BookOpen, Clock, GraduationCap, Sparkles, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type Stats = {
   users: number;
   courses: number;
   publishedCourses: number;
+  pendingPublishReviews: number;
   totalCredits: number;
 };
 
@@ -39,8 +40,8 @@ export function AdminStats() {
 
   if (!stats) {
     return (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {[1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
             className="h-28 animate-pulse rounded-2xl border border-border/60 bg-white"
@@ -54,11 +55,16 @@ export function AdminStats() {
     { label: "Users", value: stats.users, icon: Users },
     { label: "Courses", value: stats.courses, icon: BookOpen },
     { label: "Published", value: stats.publishedCourses, icon: GraduationCap },
+    {
+      label: "Pending review",
+      value: stats.pendingPublishReviews,
+      icon: Clock,
+    },
     { label: "Total credits", value: stats.totalCredits, icon: Sparkles },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
       {cards.map(({ label, value, icon: Icon }) => (
         <div
           key={label}

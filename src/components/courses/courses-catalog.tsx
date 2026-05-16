@@ -6,21 +6,24 @@ import { SlidersHorizontal } from "lucide-react";
 import { CourseCard } from "@/components/courses/course-card";
 import { CoursesSidebar } from "@/components/courses/courses-sidebar";
 import { Button } from "@/components/ui/button";
-import { MOCK_COURSES } from "@/config/mock-courses";
 import {
   DEFAULT_COURSE_FILTERS,
   filterAndSortCourses,
 } from "@/lib/courses/filter";
 import { cn } from "@/lib/utils";
-import type { CourseFilters } from "@/types/course-listing";
+import type { CourseFilters, CourseListing } from "@/types/course-listing";
 
-export function CoursesCatalog() {
+type CoursesCatalogProps = {
+  initialCourses: CourseListing[];
+};
+
+export function CoursesCatalog({ initialCourses }: CoursesCatalogProps) {
   const [filters, setFilters] = useState<CourseFilters>(DEFAULT_COURSE_FILTERS);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const filtered = useMemo(
-    () => filterAndSortCourses(MOCK_COURSES, filters),
-    [filters],
+    () => filterAndSortCourses(initialCourses, filters),
+    [initialCourses, filters],
   );
 
   return (
@@ -57,7 +60,7 @@ export function CoursesCatalog() {
         filters={filters}
         onChange={setFilters}
         resultCount={filtered.length}
-        totalCount={MOCK_COURSES.length}
+        totalCount={initialCourses.length}
         onClose={() => setMobileFiltersOpen(false)}
         className={cn(
           "lg:sticky lg:top-24 lg:w-72 lg:shrink-0",
@@ -72,7 +75,7 @@ export function CoursesCatalog() {
         <p className="mb-6 hidden text-sm text-muted-foreground lg:block">
           Showing{" "}
           <span className="font-semibold text-foreground">{filtered.length}</span>{" "}
-          of {MOCK_COURSES.length} public courses
+          of {initialCourses.length} public courses
         </p>
 
         {filtered.length > 0 ? (

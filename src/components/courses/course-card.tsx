@@ -19,7 +19,7 @@ type CourseCardProps = {
 export function CourseCard({ course, className }: CourseCardProps) {
   return (
     <Link
-      href={`/course/${course.slug}`}
+      href={`/courses/${course.slug}`}
       className={cn(
         "group flex flex-col overflow-hidden rounded-2xl border border-white/90 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_oklch(0.45_0.1_275_/_14%)]",
         className,

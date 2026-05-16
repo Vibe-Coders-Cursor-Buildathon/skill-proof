@@ -15,6 +15,7 @@ export async function GET() {
       { count: userCount },
       { count: courseCount },
       { count: publishedCount },
+      { count: pendingCount },
       { data: profiles },
     ] = await Promise.all([
       admin.from("profiles").select("*", { count: "exact", head: true }),
@@ -22,7 +23,12 @@ export async function GET() {
       admin
         .from("courses")
         .select("*", { count: "exact", head: true })
-        .eq("is_published", true),
+        .eq("is_published", true)
+        .eq("publish_status", "approved"),
+      admin
+        .from("courses")
+        .select("*", { count: "exact", head: true })
+        .eq("publish_status", "pending"),
       admin.from("profiles").select("credits_balance"),
     ]);
 
@@ -33,6 +39,7 @@ export async function GET() {
       users: userCount ?? 0,
       courses: courseCount ?? 0,
       publishedCourses: publishedCount ?? 0,
+      pendingPublishReviews: pendingCount ?? 0,
       totalCredits,
     });
   } catch (err) {

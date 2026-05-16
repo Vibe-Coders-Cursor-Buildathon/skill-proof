@@ -4,6 +4,7 @@ import {
   BookOpen,
   Layers,
   Lightbulb,
+  Pencil,
   Play,
   Video,
   FileText,
@@ -17,6 +18,10 @@ import {
   getDifficultyLabel,
   getLanguageLabel,
 } from "@/lib/courses/labels";
+import {
+  publishStatusLabel,
+  type PublishStatus,
+} from "@/lib/courses/publish-status";
 import { cn } from "@/lib/utils";
 import type { CourseRecord } from "@/types/course";
 
@@ -42,9 +47,13 @@ const DIFFICULTY_STYLES: Record<string, string> = {
 
 type DashboardCourseCardProps = {
   course: CourseRecord;
+  canEdit?: boolean;
 };
 
-export function DashboardCourseCard({ course }: DashboardCourseCardProps) {
+export function DashboardCourseCard({
+  course,
+  canEdit = false,
+}: DashboardCourseCardProps) {
   const Icon = SOURCE_ICONS[course.source_type] ?? Video;
   const hue = SOURCE_HUES[course.source_type] ?? 275;
   const summary =
@@ -58,11 +67,22 @@ export function DashboardCourseCard({ course }: DashboardCourseCardProps) {
   const quizCount = Array.isArray(course.content?.quiz)
     ? course.content.quiz.length
     : 0;
+  const publishStatus = (course.publish_status ?? "draft") as PublishStatus;
 
   return (
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/90 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-200/80 hover:shadow-[0_20px_48px_-14px_oklch(0.45_0.12_275_/_18%)]">
+      {canEdit && (
+        <Link
+          href={`/courses/${course.slug}/edit`}
+          className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-xl border border-white/40 bg-white/90 text-indigo-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-indigo-900"
+          aria-label="Edit course"
+        >
+          <Pencil className="size-4" />
+        </Link>
+      )}
     <Link
       href={`/courses/${course.slug}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-white/90 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-200/80 hover:shadow-[0_20px_48px_-14px_oklch(0.45_0.12_275_/_18%)]"
+      className="flex flex-1 flex-col"
     >
       <div
         className="relative flex h-36 flex-col justify-between p-4"
@@ -109,6 +129,21 @@ export function DashboardCourseCard({ course }: DashboardCourseCardProps) {
           <Badge variant="outline" className="text-[0.65rem] font-medium capitalize">
             {course.source_type}
           </Badge>
+          {publishStatus !== "draft" && (
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-[0.65rem] font-medium",
+                publishStatus === "pending" && "border-amber-200 bg-amber-50 text-amber-800",
+                publishStatus === "approved" &&
+                  "border-emerald-200 bg-emerald-50 text-emerald-800",
+                publishStatus === "rejected" &&
+                  "border-red-200 bg-red-50 text-red-800",
+              )}
+            >
+              {publishStatusLabel(publishStatus)}
+            </Badge>
+          )}
         </div>
 
         <h3 className="mt-3 line-clamp-2 text-base font-bold leading-snug tracking-tight group-hover:text-primary">
@@ -133,5 +168,6 @@ export function DashboardCourseCard({ course }: DashboardCourseCardProps) {
         </div>
       </div>
     </Link>
+    </div>
   );
 }

@@ -5,9 +5,18 @@ import { handleApiError } from "@/lib/api/errors";
 import { requireAdminUser } from "@/lib/auth/admin-api";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
-const patchCourseSchema = z.object({
-  is_published: z.boolean(),
-});
+const patchCourseSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("approve"),
+  }),
+  z.object({
+    action: z.literal("reject"),
+    rejection_reason: z.string().max(500).optional(),
+  }),
+  z.object({
+    action: z.literal("unpublish"),
+  }),
+]);
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -28,15 +37,40 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const admin = getSupabaseAdminClient();
+    const now = new Date().toISOString();
 
-    const updatePayload: Record<string, unknown> = {
-      is_published: parsed.data.is_published,
-    };
+    let updatePayload: Record<string, unknown>;
 
-    if (parsed.data.is_published) {
-      updatePayload.published_at = new Date().toISOString();
-    } else {
-      updatePayload.published_at = null;
+    switch (parsed.data.action) {
+      case "approve":
+        updatePayload = {
+          is_published: true,
+          publish_status: "approved",
+          published_at: now,
+          publish_reviewed_at: now,
+          publish_rejection_reason: null,
+        };
+        break;
+      case "reject":
+        updatePayload = {
+          is_published: false,
+          publish_status: "rejected",
+          published_at: null,
+          publish_reviewed_at: now,
+          publish_rejection_reason:
+            parsed.data.rejection_reason?.trim() ||
+            "Does not meet our publishing guidelines.",
+        };
+        break;
+      case "unpublish":
+        updatePayload = {
+          is_published: false,
+          publish_status: "draft",
+          published_at: null,
+          publish_reviewed_at: now,
+          publish_rejection_reason: null,
+        };
+        break;
     }
 
     const { data, error: updateError } = await admin

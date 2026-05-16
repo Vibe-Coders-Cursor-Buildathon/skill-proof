@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { PageShell } from "@/components/layout/page-shell";
 import { getUser } from "@/lib/auth/session";
-import { getProfileWithPlan } from "@/lib/auth/plan-guard";
+import { getProfileWithPlan, userHasFeature } from "@/lib/auth/plan-guard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CourseRecord } from "@/types/course";
 
@@ -56,12 +56,15 @@ export default async function DashboardPage() {
 
   const { data: courses } = await supabase
     .from("courses")
-    .select("id, slug, title, source_type, difficulty, language, created_at, content")
+    .select(
+      "id, slug, title, source_type, difficulty, language, created_at, content, publish_status, is_published",
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(20);
 
   const typedCourses = (courses ?? []) as CourseRecord[];
+  const canEditCourse = await userHasFeature(user.id, "can_edit_course");
 
   return (
     <PageShell wide>
@@ -74,6 +77,7 @@ export default async function DashboardPage() {
           credits={credits}
           creditsMax={creditsMax}
           courses={typedCourses}
+          canEditCourse={canEditCourse}
         />
       </Suspense>
     </PageShell>

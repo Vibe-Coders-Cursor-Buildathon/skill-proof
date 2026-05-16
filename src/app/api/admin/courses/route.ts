@@ -14,7 +14,7 @@ export async function GET() {
     const { data: courses, error: coursesError } = await admin
       .from("courses")
       .select(
-        "id, slug, title, is_published, published_at, created_at, user_id, difficulty, source_type",
+        "id, slug, title, is_published, published_at, created_at, user_id, difficulty, source_type, publish_status, publish_requested_at, publish_reviewed_at, publish_rejection_reason",
       )
       .order("created_at", { ascending: false });
 
@@ -59,7 +59,11 @@ export async function GET() {
       slug: c.slug,
       title: c.title,
       isPublished: c.is_published,
+      publishStatus: c.publish_status,
       publishedAt: c.published_at,
+      publishRequestedAt: c.publish_requested_at,
+      publishReviewedAt: c.publish_reviewed_at,
+      publishRejectionReason: c.publish_rejection_reason,
       createdAt: c.created_at,
       difficulty: c.difficulty,
       sourceType: c.source_type,

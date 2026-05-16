@@ -12,12 +12,15 @@ import {
   GraduationCap,
   Layers,
   Lightbulb,
+  Pencil,
   RotateCcw,
   Sparkles,
 } from "lucide-react";
 
 import { ConceptLearningTree } from "@/components/course/concept-learning-tree";
+import { PublishCoursePanel } from "@/components/course/publish-course-panel";
 import { QuizPanel } from "@/components/course/quiz-panel";
+import type { PublishStatus } from "@/lib/courses/publish-status";
 
 import { cn } from "@/lib/utils";
 import type { CourseContent, Flashcard } from "@/types/course";
@@ -34,6 +37,13 @@ type CourseMeta = {
 type CourseStudyViewProps = {
   course: CourseContent;
   meta: CourseMeta;
+  canEdit?: boolean;
+  hasEditedVersion?: boolean;
+  canPublish?: boolean;
+  publishStatus?: PublishStatus;
+  publishSlotsUsed?: number;
+  publishSlotsMax?: number;
+  publishRejectionReason?: string | null;
 };
 
 const DIFFICULTY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
@@ -48,7 +58,17 @@ const TABS: { id: StudyTab; label: string; icon: typeof BookOpen }[] = [
   { id: "quiz", label: "Quiz", icon: Lightbulb },
 ];
 
-export function CourseStudyView({ course, meta }: CourseStudyViewProps) {
+export function CourseStudyView({
+  course,
+  meta,
+  canEdit = false,
+  hasEditedVersion = false,
+  canPublish = false,
+  publishStatus = "draft",
+  publishSlotsUsed = 0,
+  publishSlotsMax = 0,
+  publishRejectionReason = null,
+}: CourseStudyViewProps) {
   const [activeTab, setActiveTab] = useState<StudyTab>("learn");
   const [masteredConcepts, setMasteredConcepts] = useState<Set<number>>(new Set());
   const [flashcardIndex, setFlashcardIndex] = useState(0);
@@ -118,7 +138,23 @@ export function CourseStudyView({ course, meta }: CourseStudyViewProps) {
             </p>
           </div>
 
-          <ProgressRing value={overallProgress} />
+          <div className="flex shrink-0 flex-col items-end gap-3">
+            {canEdit && (
+              <Link
+                href={`/courses/${meta.slug}/edit`}
+                className="inline-flex items-center gap-2 rounded-xl border border-indigo-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition-colors hover:border-indigo-300 hover:bg-indigo-50"
+              >
+                <Pencil className="size-4" />
+                Edit course
+              </Link>
+            )}
+            <ProgressRing value={overallProgress} />
+            {hasEditedVersion && (
+              <span className="text-[0.65rem] font-medium text-muted-foreground">
+                Custom edits applied
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Study mode tabs */}
@@ -145,6 +181,19 @@ export function CourseStudyView({ course, meta }: CourseStudyViewProps) {
           })}
         </div>
       </div>
+
+      {canPublish && publishSlotsMax > 0 && (
+        <div className="mt-6">
+          <PublishCoursePanel
+            slug={meta.slug}
+            publishStatus={publishStatus}
+            publishSlotsUsed={publishSlotsUsed}
+            publishSlotsMax={publishSlotsMax}
+            rejectionReason={publishRejectionReason}
+          />
+        </div>
+      )}
+
 
       {/* Tab panels */}
       <div className="mt-6">

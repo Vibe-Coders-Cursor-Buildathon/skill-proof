@@ -22,6 +22,7 @@ type DashboardTabsProps = {
   credits: number;
   creditsMax: number;
   courses: CourseRecord[];
+  canEditCourse?: boolean;
 };
 
 export function DashboardTabs({
@@ -32,6 +33,7 @@ export function DashboardTabs({
   credits,
   creditsMax,
   courses,
+  canEditCourse = false,
 }: DashboardTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -85,11 +87,16 @@ export function DashboardTabs({
               creditsMax={creditsMax}
               planName={planName}
               onViewAllCourses={goToCourses}
+              canEditCourse={canEditCourse}
             />
           )}
 
           {activeTab === "courses" && (
-            <DashboardCoursesSection courses={courses} embedded />
+            <DashboardCoursesSection
+              courses={courses}
+              embedded
+              canEditCourse={canEditCourse}
+            />
           )}
 
           {activeTab === "plan" && (

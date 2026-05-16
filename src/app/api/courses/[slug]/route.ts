@@ -66,7 +66,10 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const { data, error } = await supabase
       .from("courses")
-      .update({ content_edited: parsed.data.content_edited })
+      .update({
+        content_edited: parsed.data.content_edited,
+        title: parsed.data.content_edited.title,
+      })
       .eq("slug", slug)
       .select()
       .single();

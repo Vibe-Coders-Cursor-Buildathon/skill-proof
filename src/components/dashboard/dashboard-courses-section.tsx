@@ -9,11 +9,13 @@ type DashboardCoursesSectionProps = {
   courses: CourseRecord[];
   /** When true, omits outer section spacing (used inside tab panel). */
   embedded?: boolean;
+  canEditCourse?: boolean;
 };
 
 export function DashboardCoursesSection({
   courses,
   embedded = false,
+  canEditCourse = false,
 }: DashboardCoursesSectionProps) {
   return (
     <section className={embedded ? "" : "mt-10"}>
@@ -55,7 +57,11 @@ export function DashboardCoursesSection({
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => (
-            <DashboardCourseCard key={course.id} course={course} />
+            <DashboardCourseCard
+              key={course.id}
+              course={course}
+              canEdit={canEditCourse}
+            />
           ))}
         </div>
       )}
