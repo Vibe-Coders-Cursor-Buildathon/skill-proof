@@ -1,5 +1,6 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
+import type { ComponentProps } from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -44,12 +45,28 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  type,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  const classes = cn(buttonVariants({ variant, size, className }))
+
+  // Base UI Button always sets type="button", which breaks <form> submission.
+  if (type === "submit" || type === "reset") {
+    return (
+      <button
+        type={type}
+        data-slot="button"
+        className={classes}
+        {...(props as ComponentProps<"button">)}
+      />
+    )
+  }
+
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={classes}
+      type={type}
       {...props}
     />
   )

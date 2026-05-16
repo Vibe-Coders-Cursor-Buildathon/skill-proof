@@ -22,7 +22,7 @@ export async function signUpWithEmail(
     password: params.password,
     options: {
       data: { full_name: params.fullName },
-      emailRedirectTo: `${origin}/auth/callback`,
+      emailRedirectTo: `${origin}/auth/callback?redirect=${encodeURIComponent("/?welcome=1")}`,
     },
   });
 }

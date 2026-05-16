@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
   FileText,
   FileUp,
   Link2,
+  Loader2,
   Mic,
   Upload,
   Video,
@@ -23,6 +24,10 @@ import {
 } from "@/components/ui/select";
 import { DIFFICULTIES, LANGUAGES } from "@/config/constants";
 import { useAuth } from "@/contexts/auth-context";
+import {
+  loadPendingUpload,
+  savePendingUpload,
+} from "@/lib/auth/pending-upload";
 import { useGeneration } from "@/contexts/generation-context";
 import { cn } from "@/lib/utils";
 import type {
@@ -107,7 +112,7 @@ type ContentUploadCardProps = {
 
 export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
   const { startGeneration, isOpen: isGenerating } = useGeneration();
-  const { requireAuth, isLoading: isAuthLoading } = useAuth();
+  const { requireAuth, user, isLoading: isAuthLoading } = useAuth();
   const [sourceType, setSourceType] = useState<SourceType>("youtube");
   const [audioInputMode, setAudioInputMode] = useState<AudioInputMode>("link");
   const [url, setUrl] = useState("");
@@ -117,6 +122,18 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isAuthLoading || !user) return;
+    const draft = loadPendingUpload();
+    if (!draft) return;
+
+    setSourceType(draft.sourceType);
+    setLanguage(draft.language);
+    setDifficulty(draft.difficulty);
+    if (draft.url) setUrl(draft.url);
+    if (draft.audioInputMode) setAudioInputMode(draft.audioInputMode);
+  }, [user, isAuthLoading]);
 
   const isPdf = sourceType === "pdf";
   const isAudio = sourceType === "audio";
@@ -179,10 +196,10 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
     [handleFile],
   );
 
-  const handleGenerate = (payload: UploadFormPayload) => {
+  const handleGenerate = useCallback((payload: UploadFormPayload) => {
     onSubmit?.(payload);
     startGeneration(payload);
-  };
+  }, [onSubmit, startGeneration]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,9 +207,7 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
 
     if (showFileUpload) {
       if (!file) {
-        setError(
-          isPdf ? "Upload a PDF to continue." : "Upload an audio file to continue.",
-        );
+        setError(isPdf ? "Upload a PDF to continue." : "Upload an audio file to continue.");
         return;
       }
     } else if (!url.trim()) {
@@ -215,12 +230,14 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
       ...(showFileUpload ? { file: file! } : { url: url.trim() }),
     };
 
+    savePendingUpload(payload);
     requireAuth(() => handleGenerate(payload));
   };
 
   return (
     <form
       onSubmit={handleSubmit}
+      noValidate
       className="glass-card w-full overflow-hidden p-6 sm:p-8"
     >
       <p className="mb-6 text-center text-sm font-medium text-muted-foreground">
@@ -382,16 +399,14 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
         <Button
           type="submit"
           size="lg"
-          disabled={isAuthLoading || isGenerating}
+          disabled={isGenerating}
           className="btn-gradient mt-6 h-12 w-full rounded-2xl border-0 text-base font-semibold"
         >
-          {isAuthLoading ? (
-            "Checking session…"
-          ) : isGenerating ? (
-            "Preparing your course…"
+          {isGenerating ? (
+            <Loader2 className="size-5 animate-spin" />
           ) : (
             <>
-              Generate course
+              Create Course
               <ArrowRight className="size-4" />
             </>
           )}

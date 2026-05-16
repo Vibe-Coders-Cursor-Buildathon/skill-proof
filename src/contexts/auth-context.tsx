@@ -80,7 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(mapSessionToUser(session, null));
         return;
       }
-      const profile = await fetchProfileForUser(supabase, session.user.id);
+      let profile = null;
+      try {
+        profile = await fetchProfileForUser(supabase, session.user.id);
+      } catch {
+        // ignore — use auth metadata only
+      }
       setUser(mapSessionToUser(session, profile));
     },
     [],
@@ -94,14 +99,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     void (async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        const profile = await fetchProfileForUser(supabase, authUser.id);
-        setUser(mapSupabaseUser(authUser, profile));
-      } else {
-        setUser(null);
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          let profile = null;
+          try {
+            profile = await fetchProfileForUser(supabase, authUser.id);
+          } catch {
+            // Profile row may not exist yet right after signup
+          }
+          setUser(mapSupabaseUser(authUser, profile));
+        } else {
+          setUser(null);
+        }
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     })();
 
     const {
@@ -130,10 +143,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [router, runPendingCallback, syncUserFromSession]);
 
-  // Run queued action after session finishes loading (e.g. user clicked Generate while hydrating)
+  // Run queued action after session finishes loading
   useEffect(() => {
-    if (!isLoading && user && pendingCallback.current) {
+    if (isLoading) return;
+    if (user && pendingCallback.current) {
       runPendingCallback();
+    } else if (!user && pendingCallback.current) {
+      // Loading finished, no session found — open sign-in modal now
+      setAuthModalTab("signin");
+      setIsAuthModalOpen(true);
     }
   }, [isLoading, user, runPendingCallback]);
 
@@ -155,37 +173,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const requireAuth = useCallback(
     (onSuccess?: () => void) => {
+      // Already logged in — run immediately
       if (user) {
         onSuccess?.();
         return;
       }
 
-      // Session may exist in cookies before React user state is hydrated
+      // Store the callback so it fires after login
+      pendingCallback.current = onSuccess;
+
       if (isLoading) {
-        pendingCallback.current = onSuccess;
+        // Still hydrating — the effect above will open the modal once resolved
         return;
       }
 
-      void (async () => {
-        const supabase = createSupabaseBrowserClient();
-        if (!supabase) {
-          pendingCallback.current = onSuccess;
-          openAuthModal("signin");
-          return;
-        }
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session?.user) {
-          await syncUserFromSession(session);
-          onSuccess?.();
-          return;
-        }
-
-        pendingCallback.current = onSuccess;
-        openAuthModal("signin");
-      })();
+      // Not logged in and not loading — open modal straight away
+      openAuthModal("signin");
     },
-    [user, isLoading, openAuthModal, syncUserFromSession],
+    [user, isLoading, openAuthModal],
   );
 
   const logout = useCallback(async () => {

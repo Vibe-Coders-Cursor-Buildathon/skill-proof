@@ -1,7 +1,16 @@
 /**
- * YouTube transcript extraction via public caption tracks.
- * Gemini is used later in /api/courses/generate to turn transcript → course JSON.
+ * YouTube transcript extraction via Innertube API (youtube-transcript-plus).
+ * Avoids the legacy timedtext endpoint, which often returns empty bodies without PO tokens.
  */
+
+import {
+  fetchTranscript,
+  YoutubeTranscriptDisabledError,
+  YoutubeTranscriptNotAvailableError,
+  YoutubeTranscriptNotAvailableLanguageError,
+  YoutubeTranscriptTooManyRequestError,
+  YoutubeTranscriptVideoUnavailableError,
+} from "youtube-transcript-plus";
 
 export type YouTubeTranscriptSegment = {
   text: string;
@@ -16,15 +25,6 @@ export type YouTubeTranscriptResult = {
   segments: YouTubeTranscriptSegment[];
   wordCount: number;
 };
-
-type CaptionTrack = {
-  baseUrl: string;
-  languageCode: string;
-  name?: { simpleText?: string };
-};
-
-const USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 export function extractYouTubeVideoId(url: string): string | null {
   try {
@@ -59,94 +59,37 @@ function decodeCaptionText(raw: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
     .replace(/\n/g, " ")
     .trim();
 }
 
-function parseCaptionXml(xml: string): YouTubeTranscriptSegment[] {
-  const segments: YouTubeTranscriptSegment[] = [];
-  const regex = /<text start="([^"]+)" dur="([^"]+)"[^>]*>([^<]*)<\/text>/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = regex.exec(xml)) !== null) {
-    const text = decodeCaptionText(match[3]);
-    if (!text) continue;
-    segments.push({
-      text,
-      offsetMs: Math.round(parseFloat(match[1]) * 1000),
-      durationMs: Math.round(parseFloat(match[2]) * 1000),
-    });
-  }
-
-  return segments;
-}
-
-async function fetchCaptionTracks(videoId: string): Promise<CaptionTrack[]> {
-  const pageUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  const res = await fetch(pageUrl, {
-    headers: { "User-Agent": USER_AGENT, "Accept-Language": "en-US,en;q=0.9" },
-    next: { revalidate: 0 },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Could not load YouTube video (HTTP ${res.status}).`);
-  }
-
-  const html = await res.text();
-  const marker = '"captionTracks":';
-  const start = html.indexOf(marker);
-  if (start === -1) {
-    throw new Error(
-      "No captions found for this video. The uploader may have disabled subtitles.",
+function mapTranscriptError(error: unknown): Error {
+  if (error instanceof YoutubeTranscriptDisabledError) {
+    return new Error(
+      "Subtitles are disabled for this video. Try another video with captions turned on.",
     );
   }
-
-  let jsonStart = start + marker.length;
-  while (html[jsonStart] === " ") jsonStart++;
-
-  if (html[jsonStart] !== "[") {
-    throw new Error("Could not parse caption tracks from YouTube.");
-  }
-
-  let depth = 0;
-  let jsonEnd = jsonStart;
-  for (let i = jsonStart; i < html.length; i++) {
-    const ch = html[i];
-    if (ch === "[") depth++;
-    else if (ch === "]") {
-      depth--;
-      if (depth === 0) {
-        jsonEnd = i + 1;
-        break;
-      }
-    }
-  }
-
-  const raw = html.slice(jsonStart, jsonEnd).replace(/\\u0026/g, "&");
-  const tracks = JSON.parse(raw) as CaptionTrack[];
-
-  if (!Array.isArray(tracks) || tracks.length === 0) {
-    throw new Error(
-      "No captions found for this video. Try a video with English subtitles enabled.",
+  if (error instanceof YoutubeTranscriptNotAvailableLanguageError) {
+    return new Error(
+      "No subtitles in the selected language. Try English or pick another video.",
     );
   }
-
-  return tracks;
-}
-
-function pickCaptionTrack(tracks: CaptionTrack[], preferredLang?: string): CaptionTrack {
-  if (preferredLang) {
-    const exact = tracks.find((t) => t.languageCode === preferredLang);
-    if (exact) return exact;
-    const prefix = tracks.find((t) => t.languageCode.startsWith(preferredLang));
-    if (prefix) return prefix;
+  if (error instanceof YoutubeTranscriptNotAvailableError) {
+    return new Error(
+      "No captions found for this video. Try a video with subtitles (CC) enabled.",
+    );
   }
-
-  const english =
-    tracks.find((t) => t.languageCode === "en") ??
-    tracks.find((t) => t.languageCode.startsWith("en"));
-
-  return english ?? tracks[0];
+  if (error instanceof YoutubeTranscriptVideoUnavailableError) {
+    return new Error("This video is unavailable or private.");
+  }
+  if (error instanceof YoutubeTranscriptTooManyRequestError) {
+    return new Error(
+      "YouTube is rate-limiting requests. Wait a moment and try again.",
+    );
+  }
+  if (error instanceof Error) return error;
+  return new Error("Failed to extract transcript from YouTube.");
 }
 
 export async function fetchYouTubeTranscript(
@@ -158,31 +101,37 @@ export async function fetchYouTubeTranscript(
     throw new Error("Invalid YouTube URL. Use a link like youtube.com/watch?v=...");
   }
 
-  const tracks = await fetchCaptionTracks(videoId);
-  const track = pickCaptionTrack(tracks, options?.language);
+  try {
+    const lang = options?.language?.split("-")[0];
+    const rawSegments = lang
+      ? await fetchTranscript(url, { lang })
+      : await fetchTranscript(url);
 
-  const captionRes = await fetch(track.baseUrl, {
-    headers: { "User-Agent": USER_AGENT },
-    next: { revalidate: 0 },
-  });
+    const segments: YouTubeTranscriptSegment[] = rawSegments
+      .map((s) => ({
+        text: decodeCaptionText(s.text),
+        offsetMs: Math.round(s.offset * 1000),
+        durationMs: Math.round(s.duration * 1000),
+      }))
+      .filter((s) => s.text.length > 0);
 
-  if (!captionRes.ok) {
-    throw new Error(`Failed to download captions (HTTP ${captionRes.status}).`);
+    if (segments.length === 0) {
+      throw new Error(
+        "No transcript text found for this video. Try another video with subtitles enabled.",
+      );
+    }
+
+    const language = rawSegments[0]?.lang ?? lang ?? "en";
+    const transcript = segments.map((s) => s.text).join(" ");
+
+    return {
+      videoId,
+      language,
+      transcript,
+      segments,
+      wordCount: transcript.split(/\s+/).filter(Boolean).length,
+    };
+  } catch (error) {
+    throw mapTranscriptError(error);
   }
-
-  const xml = await captionRes.text();
-  const segments = parseCaptionXml(xml);
-
-  if (segments.length === 0) {
-    throw new Error("Caption file was empty. This video may not have usable subtitles.");
-  }
-
-  const transcript = segments.map((s) => s.text).join(" ");
-  return {
-    videoId,
-    language: track.languageCode,
-    transcript,
-    segments,
-    wordCount: transcript.split(/\s+/).filter(Boolean).length,
-  };
 }

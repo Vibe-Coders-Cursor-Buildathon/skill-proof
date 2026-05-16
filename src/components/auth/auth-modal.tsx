@@ -116,7 +116,9 @@ export function AuthModal() {
           return;
         }
 
-        setSuccessMessage("Check your email to confirm your account, then sign in.");
+        setSuccessMessage(
+          "Check your email and click the confirmation link. We'll bring you back here to create your course.",
+        );
         setTab("signin");
         return;
       }

@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { PostSignupWelcome } from "@/components/home/post-signup-welcome";
 import { ContentUploadCard } from "@/components/upload/content-upload-card";
 import { Globe2, Sparkles, Zap } from "lucide-react";
 
@@ -46,6 +47,7 @@ export function HeroSection() {
         id="upload"
         className="mx-auto mt-12 max-w-2xl scroll-mt-28 sm:mt-14"
       >
+        <PostSignupWelcome />
         <ContentUploadCard />
       </div>
     </section>
