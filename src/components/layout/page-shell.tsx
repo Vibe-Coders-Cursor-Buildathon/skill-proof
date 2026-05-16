@@ -15,7 +15,7 @@ export function PageShell({
       <main
         className={cn(
           "relative mx-auto flex w-full flex-1 flex-col",
-          wide ? "max-w-6xl px-4 sm:px-6" : "max-w-5xl px-4 py-8",
+          wide ? "max-w-6xl px-4 py-8 sm:px-6" : "max-w-5xl px-4 py-8",
         )}
       >
         {children}

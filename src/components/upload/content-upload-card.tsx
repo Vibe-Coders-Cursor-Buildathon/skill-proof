@@ -113,6 +113,7 @@ type ContentUploadCardProps = {
 export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
   const { startGeneration, isOpen: isGenerating } = useGeneration();
   const { requireAuth, user, isLoading: isAuthLoading } = useAuth();
+  const noCredits = user !== null && user.creditsBalance !== undefined && user.creditsBalance < 1;
   const [sourceType, setSourceType] = useState<SourceType>("youtube");
   const [audioInputMode, setAudioInputMode] = useState<AudioInputMode>("link");
   const [url, setUrl] = useState("");
@@ -396,11 +397,24 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
           </p>
         )}
 
+        {noCredits && (
+          <div className="mt-6 flex items-center gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <span className="text-lg">✦</span>
+            <p className="text-sm text-amber-800">
+              <span className="font-semibold">No credits left.</span>{" "}
+              <a href="/#pricing" className="underline underline-offset-2 hover:text-amber-900">
+                Upgrade your plan
+              </a>{" "}
+              to create more courses.
+            </p>
+          </div>
+        )}
+
         <Button
           type="submit"
           size="lg"
-          disabled={isGenerating}
-          className="btn-gradient mt-6 h-12 w-full rounded-2xl border-0 text-base font-semibold"
+          disabled={isGenerating || noCredits}
+          className="btn-gradient mt-4 h-12 w-full rounded-2xl border-0 text-base font-semibold disabled:opacity-50"
         >
           {isGenerating ? (
             <Loader2 className="size-5 animate-spin" />

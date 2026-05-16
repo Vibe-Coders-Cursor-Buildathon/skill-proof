@@ -9,6 +9,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import type { UploadFormPayload } from "@/types/upload";
+import { useAuth } from "@/contexts/auth-context";
 
 export type GenerationStepId =
   | "preparing"
@@ -46,6 +47,7 @@ function delay(ms: number) {
 
 export function GenerationProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const { updateCredits } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [steps, setSteps] = useState<GenerationStep[]>(INITIAL_STEPS);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +107,11 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           }),
         });
 
-        const json = await res.json() as { slug?: string; error?: string };
+        const json = await res.json() as { slug?: string; error?: string; creditsBalance?: number };
+
+        if (res.status === 402) {
+          throw new Error("You have no credits left. Please upgrade your plan to create more courses.");
+        }
 
         if (res.status === 429) {
           throw new Error(json.error ?? "Rate limit reached. Please wait a moment and try again.");
@@ -113,6 +119,11 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
         if (!res.ok) {
           throw new Error(json.error ?? "Course generation failed. Please try again.");
+        }
+
+        // Update the credit chip in the header instantly
+        if (typeof json.creditsBalance === "number") {
+          updateCredits(json.creditsBalance);
         }
 
         setStepStatus("generating", "done");
