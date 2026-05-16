@@ -1,15 +1,14 @@
-import { Suspense } from "react";
-import { PageShell } from "@/components/layout/page-shell";
-import { LoginForm } from "@/components/auth/login-form";
+import { redirect } from "next/navigation";
 
-export default function LoginPage() {
-  return (
-    <PageShell>
-      <div className="flex flex-1 items-center justify-center py-12">
-        <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
-          <LoginForm />
-        </Suspense>
-      </div>
-    </PageShell>
-  );
+type LoginPageProps = {
+  searchParams: Promise<{ redirect?: string }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const { redirect: redirectTo } = await searchParams;
+  const params = new URLSearchParams({ auth: "signin" });
+  if (redirectTo) {
+    params.set("redirect", redirectTo);
+  }
+  redirect(`/?${params.toString()}`);
 }
