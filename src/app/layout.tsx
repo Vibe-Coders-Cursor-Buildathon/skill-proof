@@ -6,6 +6,7 @@ import { AuthModal } from "@/components/auth/auth-modal";
 import { CourseGenerationModal } from "@/components/generation/course-generation-modal";
 import { AuthProvider } from "@/contexts/auth-context";
 import { GenerationProvider } from "@/contexts/generation-context";
+import { getAuthUser } from "@/lib/auth/get-auth-user";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -20,18 +21,20 @@ export const metadata: Metadata = {
     "Transform YouTube videos, PDFs, and articles into micro-courses with flashcards, quizzes, and certificates.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialUser = await getAuthUser();
+
   return (
     <html
       lang="en"
       className={`${poppins.variable} light h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <AuthProvider>
+        <AuthProvider initialUser={initialUser}>
           <GenerationProvider>
             {children}
             <AuthModal />

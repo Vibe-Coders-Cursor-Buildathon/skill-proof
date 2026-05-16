@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   AUTH_PENDING_ACTION_KEY,
@@ -17,7 +18,6 @@ import {
 } from "@/lib/auth/auth-actions";
 import { mapSessionToUser, mapSupabaseUser } from "@/lib/auth/map-user";
 import type { ProfileRole } from "@/types/plan";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export type AuthUser = {
@@ -48,22 +48,30 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function fetchProfileForUser(supabase: SupabaseClient, userId: string) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("display_name, credits_balance, role, plans(name)")
     .eq("id", userId)
     .single();
 
+  if (error) return null;
   return data;
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+type AuthProviderProps = {
+  children: React.ReactNode;
+  /** Hydrated from the server so the header shows the user immediately. */
+  initialUser: AuthUser | null;
+};
+
+export function AuthProvider({ children, initialUser }: AuthProviderProps) {
   const router = useRouter();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<AuthUser | null>(initialUser);
+  const [isLoading, setIsLoading] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<AuthTab>("signin");
   const pendingCallback = useRef<(() => void) | undefined>(undefined);
+  const isFirstAuthEvent = useRef(true);
 
   const runPendingCallback = useCallback(() => {
     const cb = pendingCallback.current;
@@ -71,59 +79,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     cb?.();
   }, []);
 
-  const syncUserFromSession = useCallback(
-    async (session: Session | null) => {
-      if (!session?.user) {
-        setUser(null);
-        return;
-      }
-
-      const supabase = createSupabaseBrowserClient();
-      if (!supabase) {
-        setUser(mapSessionToUser(session, null));
-        return;
-      }
-      let profile = null;
-      try {
-        profile = await fetchProfileForUser(supabase, session.user.id);
-      } catch {
-        // ignore — use auth metadata only
-      }
-      setUser(mapSessionToUser(session, profile));
-    },
-    [],
-  );
-
-  useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
-    if (!supabase) {
-      setIsLoading(false);
+  const syncUserFromSession = useCallback(async (session: Session | null) => {
+    if (!session?.user) {
+      setUser(null);
       return;
     }
 
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) {
+      setUser(mapSessionToUser(session, null));
+      return;
+    }
+
+    const profile = await fetchProfileForUser(supabase, session.user.id);
+    setUser(mapSessionToUser(session, profile));
+  }, []);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) return;
+
     void (async () => {
-      try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-          let profile = null;
-          try {
-            profile = await fetchProfileForUser(supabase, authUser.id);
-          } catch {
-            // Profile row may not exist yet right after signup
-          }
-          setUser(mapSupabaseUser(authUser, profile));
-        } else {
-          setUser(null);
-        }
-      } finally {
-        setIsLoading(false);
-      }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      await syncUserFromSession(session);
     })();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       await syncUserFromSession(session);
+
+      if (isFirstAuthEvent.current) {
+        isFirstAuthEvent.current = false;
+        return;
+      }
 
       if (event === "SIGNED_IN" && session) {
         setIsAuthModalOpen(false);
@@ -149,6 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (event === "SIGNED_OUT") {
         setUser(null);
         pendingCallback.current = undefined;
+        isFirstAuthEvent.current = true;
         router.refresh();
       }
     });
@@ -156,13 +148,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [router, runPendingCallback, syncUserFromSession]);
 
-  // Run queued action after session finishes loading
   useEffect(() => {
     if (isLoading) return;
     if (user && pendingCallback.current) {
       runPendingCallback();
     } else if (!user && pendingCallback.current) {
-      // Loading finished, no session found — open sign-in modal now
       setAuthModalTab("signin");
       setIsAuthModalOpen(true);
     }
@@ -186,28 +176,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const requireAuth = useCallback(
     (onSuccess?: () => void) => {
-      // Already logged in — run immediately
       if (user) {
         onSuccess?.();
         return;
       }
 
-      // Store the callback so it fires after login
       pendingCallback.current = onSuccess;
 
       if (isLoading) {
-        // Still hydrating — the effect above will open the modal once resolved
         return;
       }
 
-      // Not logged in and not loading — open modal straight away
       openAuthModal("signin");
     },
     [user, isLoading, openAuthModal],
   );
 
   const updateCredits = useCallback((newBalance: number) => {
-    setUser((prev) => prev ? { ...prev, creditsBalance: newBalance } : prev);
+    setUser((prev) => (prev ? { ...prev, creditsBalance: newBalance } : prev));
   }, []);
 
   const logout = useCallback(async () => {
@@ -215,6 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (supabase) await supabase.auth.signOut();
     setUser(null);
     pendingCallback.current = undefined;
+    isFirstAuthEvent.current = true;
     router.push("/");
     router.refresh();
   }, [router]);
