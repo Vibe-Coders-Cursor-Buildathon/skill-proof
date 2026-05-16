@@ -1,9 +1,29 @@
 import { z } from "zod";
 import { quizQuestionSchema } from "@/types/course";
 
+export const adaptiveQuizModeSchema = z.enum(["remedial", "challenge"]);
+
 export const adaptiveQuizRequestSchema = z.object({
+  mode: adaptiveQuizModeSchema,
   score: z.number().min(0).max(100),
   wrongConcepts: z.array(z.string()),
+  courseTitle: z.string().min(1),
+  courseSummary: z.string().min(1),
+  concepts: z.array(
+    z.object({
+      title: z.string(),
+      explanation: z.string(),
+    }),
+  ).min(1),
+  missedQuestions: z
+    .array(
+      z.object({
+        question: z.string(),
+        explanation: z.string(),
+        concept: z.string().optional(),
+      }),
+    )
+    .optional(),
   language: z.string().optional(),
   difficulty: z.enum(["beginner", "intermediate", "expert"]).optional(),
 });

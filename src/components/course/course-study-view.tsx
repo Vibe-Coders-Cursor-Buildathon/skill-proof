@@ -14,13 +14,13 @@ import {
   Lightbulb,
   RotateCcw,
   Sparkles,
-  Trophy,
 } from "lucide-react";
 
 import { ConceptLearningTree } from "@/components/course/concept-learning-tree";
+import { QuizPanel } from "@/components/course/quiz-panel";
 
 import { cn } from "@/lib/utils";
-import type { CourseContent, Flashcard, QuizQuestion } from "@/types/course";
+import type { CourseContent, Flashcard } from "@/types/course";
 
 type StudyTab = "learn" | "flashcards" | "quiz";
 
@@ -185,7 +185,14 @@ export function CourseStudyView({ course, meta }: CourseStudyViewProps) {
           />
         )}
         {activeTab === "quiz" && (
-          <QuizPanel questions={course.quiz} courseTitle={course.title} />
+          <QuizPanel
+            initialQuestions={course.quiz}
+            concepts={course.concepts}
+            courseTitle={course.title}
+            courseSummary={course.summary}
+            language={meta.language}
+            difficulty={meta.difficulty}
+          />
         )}
       </div>
     </div>
@@ -473,166 +480,3 @@ function FlashcardsPanel({
   );
 }
 
-function QuizPanel({
-  questions,
-  courseTitle,
-}: {
-  questions: QuizQuestion[];
-  courseTitle: string;
-}) {
-  const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [revealed, setRevealed] = useState(false);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
-
-  const question = questions[index];
-  const letters = ["A", "B", "C", "D"];
-
-  const handleSelect = (optionIndex: number) => {
-    if (revealed) return;
-    setSelected(optionIndex);
-    setRevealed(true);
-    if (optionIndex === question.correct) {
-      setScore((s) => s + 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (index < questions.length - 1) {
-      setIndex((i) => i + 1);
-      setSelected(null);
-      setRevealed(false);
-    } else {
-      setFinished(true);
-    }
-  };
-
-  const percent = Math.round((score / questions.length) * 100);
-
-  if (finished) {
-    return (
-      <div className="glass-card mx-auto max-w-lg p-8 text-center">
-        <Trophy
-          className={cn(
-            "mx-auto size-16",
-            percent >= 70 ? "text-amber-500" : "text-muted-foreground",
-          )}
-        />
-        <h2 className="mt-4 text-2xl font-bold">Quiz complete!</h2>
-        <p className="mt-2 text-muted-foreground">{courseTitle}</p>
-        <p className="mt-6 text-5xl font-bold text-gradient">{percent}%</p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {score} of {questions.length} correct
-        </p>
-        {percent >= 70 ? (
-          <p className="mt-4 text-sm font-medium text-emerald-700">
-            Great work — you&apos;re ready for a certificate soon!
-          </p>
-        ) : (
-          <p className="mt-4 text-sm font-medium text-amber-700">
-            Review the concepts and flashcards, then try again.
-          </p>
-        )}
-        <button
-          type="button"
-          onClick={() => {
-            setIndex(0);
-            setSelected(null);
-            setRevealed(false);
-            setScore(0);
-            setFinished(false);
-          }}
-          className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-border px-5 py-2.5 text-sm font-semibold hover:bg-muted/50"
-        >
-          <RotateCcw className="size-4" />
-          Retry quiz
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-semibold">
-          Question {index + 1} / {questions.length}
-        </span>
-        <span className="text-muted-foreground">Score: {score}</span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all"
-          style={{ width: `${((index + (revealed ? 1 : 0)) / questions.length) * 100}%` }}
-        />
-      </div>
-
-      <div className="glass-card p-6 sm:p-8">
-        <p className="text-lg font-semibold leading-relaxed tracking-tight [word-spacing:0.03em] sm:text-xl sm:leading-snug">
-          {question.question}
-        </p>
-        <ul className="mt-6 space-y-3">
-          {question.options.map((option, i) => {
-            const isSelected = selected === i;
-            const isCorrect = i === question.correct;
-            let style =
-              "border-border/80 bg-white hover:border-indigo-200 hover:bg-indigo-50/50";
-            if (revealed) {
-              if (isCorrect) style = "border-emerald-300 bg-emerald-50";
-              else if (isSelected && !isCorrect)
-                style = "border-red-200 bg-red-50";
-              else style = "border-border/60 bg-muted/30 opacity-60";
-            } else if (isSelected) {
-              style = "border-indigo-300 bg-indigo-50";
-            }
-
-            return (
-              <li key={i}>
-                <button
-                  type="button"
-                  disabled={revealed}
-                  onClick={() => handleSelect(i)}
-                  className={cn(
-                    "flex w-full items-start gap-3 rounded-xl border-2 p-4 text-left text-sm font-medium transition-all",
-                    style,
-                  )}
-                >
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-bold">
-                    {letters[i]}
-                  </span>
-                  {option}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-
-        {revealed && (
-          <div
-            className={cn(
-              "mt-6 rounded-xl border p-4 text-sm leading-relaxed",
-              selected === question.correct
-                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                : "border-amber-200 bg-amber-50 text-amber-900",
-            )}
-          >
-            <p className="font-semibold">
-              {selected === question.correct ? "Correct!" : "Not quite"}
-            </p>
-            <p className="mt-1">{question.explanation}</p>
-          </div>
-        )}
-
-        {revealed && (
-          <button
-            type="button"
-            onClick={handleNext}
-            className="btn-gradient mt-6 w-full rounded-2xl py-3 text-sm font-semibold"
-          >
-            {index < questions.length - 1 ? "Next question" : "See results"}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}

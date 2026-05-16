@@ -22,6 +22,7 @@ const quizItemSchema: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
     question: { type: SchemaType.STRING },
+    concept: { type: SchemaType.STRING },
     options: {
       type: SchemaType.ARRAY,
       items: { type: SchemaType.STRING },
@@ -31,7 +32,7 @@ const quizItemSchema: ResponseSchema = {
     correct: { type: SchemaType.INTEGER },
     explanation: { type: SchemaType.STRING },
   },
-  required: ["question", "options", "correct", "explanation"],
+  required: ["question", "options", "correct", "explanation", "concept"],
 };
 
 /** Gemini responseSchema for structured course JSON output. */

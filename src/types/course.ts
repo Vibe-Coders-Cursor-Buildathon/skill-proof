@@ -20,6 +20,8 @@ export const quizQuestionSchema = z.object({
   ]),
   correct: z.number().int().min(0).max(3),
   explanation: z.string(),
+  /** Concept title this question tests (used for adaptive follow-up). */
+  concept: z.string().optional(),
 });
 
 export const courseContentSchema = z.object({

@@ -22,7 +22,7 @@ export async function generateCourseFromContent(params: {
 Rules:
 - concepts: 5 to 8 items
 - flashcards: exactly 10 items
-- quiz: exactly 5 items; each quiz item has exactly 4 options; "correct" is the 0-based index of the right option
+- quiz: exactly 5 items; each quiz item has exactly 4 options; "correct" is the 0-based index of the right option; each quiz item must include "concept" set to the exact title of the concept it tests
 - Language: ${langName}
 - Difficulty level: ${params.difficulty}
 - Write all text in ${langName}
