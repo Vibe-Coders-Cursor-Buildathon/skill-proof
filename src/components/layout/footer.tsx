@@ -3,7 +3,6 @@ import { GraduationCap } from "lucide-react";
 
 import { MAIN_NAV_LINKS } from "@/config/nav";
 
-export function Footer() {
 type FooterProps = {
   variant?: "full" | "minimal";
 };
