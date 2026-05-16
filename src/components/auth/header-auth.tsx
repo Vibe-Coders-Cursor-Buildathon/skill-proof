@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, LogOut, Shield, User } from "lucide-react";
+
+import { ChevronDown, LogOut, Sparkles, User } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -32,8 +33,22 @@ export function HeaderAuth() {
     );
   }
 
+  const credits = user.creditsBalance ?? 0;
+  const hasLowCredits = credits === 0;
+
   return (
     <div className="flex items-center gap-2">
+      {/* Credits pill — always visible when logged in */}
+      <div className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${
+        hasLowCredits
+          ? "border-amber-200 bg-amber-50 text-amber-700"
+          : "border-indigo-200 bg-indigo-50 text-indigo-700"
+      }`}>
+        <Sparkles className="size-3" />
+        <span>{credits}</span>
+        <span className="hidden sm:inline">credit{credits !== 1 ? "s" : ""}</span>
+      </div>
+
       <div className="relative">
         <button
           type="button"
@@ -75,11 +90,14 @@ export function HeaderAuth() {
                 <p className="truncate text-xs text-muted-foreground">
                   {user.email}
                 </p>
-                {user.creditsBalance !== undefined && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {user.creditsBalance} credits
-                  </p>
-                )}
+                <div className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                  hasLowCredits
+                    ? "border-amber-200 bg-amber-50 text-amber-700"
+                    : "border-indigo-200 bg-indigo-50 text-indigo-700"
+                }`}>
+                  <Sparkles className="size-3" />
+                  {credits} credit{credits !== 1 ? "s" : ""} remaining
+                </div>
               </div>
               <Link
                 href="/dashboard"
