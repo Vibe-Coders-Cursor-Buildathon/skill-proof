@@ -15,7 +15,7 @@ import {
   AUTH_PENDING_ACTION_KEY,
   consumeOAuthPendingAction,
 } from "@/lib/auth/auth-actions";
-import { mapSessionToUser } from "@/lib/auth/map-user";
+import { mapSessionToUser, mapSupabaseUser } from "@/lib/auth/map-user";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export type AuthUser = {
@@ -87,9 +87,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      syncUserFromSession(session).finally(() => setIsLoading(false));
-    });
+    void (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const profile = await fetchProfileForUser(supabase, authUser.id);
+        setUser(mapSupabaseUser(authUser, profile));
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    })();
 
     const {
       data: { subscription },
@@ -117,6 +124,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [router, runPendingCallback, syncUserFromSession]);
 
+  // Run queued action after session finishes loading (e.g. user clicked Generate while hydrating)
+  useEffect(() => {
+    if (!isLoading && user && pendingCallback.current) {
+      runPendingCallback();
+    }
+  }, [isLoading, user, runPendingCallback]);
+
   const openAuthModal = useCallback((tab: AuthTab = "signin") => {
     setAuthModalTab(tab);
     setIsAuthModalOpen(true);
@@ -139,10 +153,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         onSuccess?.();
         return;
       }
-      pendingCallback.current = onSuccess;
-      openAuthModal("signin");
+
+      // Session may exist in cookies before React user state is hydrated
+      if (isLoading) {
+        pendingCallback.current = onSuccess;
+        return;
+      }
+
+      void (async () => {
+        const supabase = createSupabaseBrowserClient();
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          await syncUserFromSession(session);
+          onSuccess?.();
+          return;
+        }
+
+        pendingCallback.current = onSuccess;
+        openAuthModal("signin");
+      })();
     },
-    [user, openAuthModal],
+    [user, isLoading, openAuthModal, syncUserFromSession],
   );
 
   const logout = useCallback(async () => {

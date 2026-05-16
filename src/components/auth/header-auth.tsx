@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, User } from "lucide-react";
+import { ChevronDown, LogOut, User } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,9 @@ export function HeaderAuth() {
 
   if (isLoading) {
     return (
-      <div className="h-10 w-24 animate-pulse rounded-full bg-muted/60" />
+      <div className="flex items-center gap-2">
+        <div className="h-10 w-28 animate-pulse rounded-full bg-muted/60" />
+      </div>
     );
   }
 
@@ -31,69 +33,101 @@ export function HeaderAuth() {
   }
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setMenuOpen((o) => !o)}
-        className="flex items-center gap-2.5 rounded-full border border-border/60 bg-white/80 py-1.5 pr-3.5 pl-1.5 shadow-sm transition-all hover:shadow-md"
-        aria-haspopup="true"
-        aria-expanded={menuOpen}
-      >
-        <span className="flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-bold text-white">
-          {user.avatarLetter}
-        </span>
-        <span className="max-w-[120px] truncate text-sm font-semibold text-foreground">
-          {user.name}
-        </span>
-      </button>
-
-      {menuOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setMenuOpen(false)}
-            aria-hidden
-          />
-          <div
+    <div className="flex items-center gap-2">
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setMenuOpen((o) => !o)}
+          className="flex items-center gap-2 rounded-full border border-border/60 bg-white/80 py-1.5 pr-2 pl-1.5 shadow-sm transition-all hover:shadow-md sm:pr-3"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          aria-label="Account menu"
+        >
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-bold text-white">
+            {user.avatarLetter}
+          </span>
+          <span className="hidden max-w-[100px] truncate text-sm font-semibold text-foreground sm:inline">
+            {user.name}
+          </span>
+          <ChevronDown
             className={cn(
-              "absolute top-full right-0 z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-border/50 bg-white shadow-xl ring-1 ring-black/5",
+              "size-4 text-muted-foreground transition-transform",
+              menuOpen && "rotate-180",
             )}
-          >
-            <div className="border-b border-border/50 px-4 py-3">
-              <p className="truncate text-sm font-semibold text-foreground">
-                {user.name}
-              </p>
-              <p className="truncate text-xs text-muted-foreground">
-                {user.email}
-              </p>
-              {user.creditsBalance !== undefined && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {user.creditsBalance} credits
-                </p>
-              )}
-            </div>
-            <Link
-              href="/dashboard"
+          />
+        </button>
+
+        {menuOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
               onClick={() => setMenuOpen(false)}
-              className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+              aria-hidden
+            />
+            <div
+              role="menu"
+              className="absolute top-full right-0 z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-border/50 bg-white shadow-xl ring-1 ring-black/5"
             >
-              <User className="size-4" />
-              Dashboard
-            </Link>
-            <button
-              type="button"
-              onClick={async () => {
-                await logout();
-                setMenuOpen(false);
-              }}
-              className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/8"
-            >
-              <LogOut className="size-4" />
-              Sign out
-            </button>
-          </div>
-        </>
-      )}
+              <div className="border-b border-border/50 px-4 py-3">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {user.name}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {user.email}
+                </p>
+                {user.creditsBalance !== undefined && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {user.creditsBalance} credits
+                  </p>
+                )}
+              </div>
+              <Link
+                href="/dashboard"
+                role="menuitem"
+                onClick={() => setMenuOpen(false)}
+                className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+              >
+                <User className="size-4" />
+                Dashboard
+              </Link>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={async () => {
+                  setMenuOpen(false);
+                  await logout();
+                }}
+                className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/8 md:hidden"
+              >
+                <LogOut className="size-4" />
+                Sign out
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => logout()}
+        className="hidden h-10 gap-1.5 rounded-full border-border/60 bg-white/80 px-4 text-sm font-medium shadow-sm hover:bg-white md:inline-flex"
+      >
+        <LogOut className="size-4" />
+        Log out
+      </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        onClick={() => logout()}
+        className="inline-flex size-10 shrink-0 rounded-full border-border/60 bg-white/80 shadow-sm hover:bg-white md:hidden"
+        aria-label="Log out"
+      >
+        <LogOut className="size-4" />
+      </Button>
     </div>
   );
 }
