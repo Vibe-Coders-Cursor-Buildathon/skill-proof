@@ -6,6 +6,14 @@ import { Brain, Check, Sparkles, Sprout } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Concept } from "@/types/course";
 
+/** Readable, memorable typography for concept content */
+const CONCEPT_TITLE =
+  "mt-1 text-xl font-bold leading-snug tracking-tight text-foreground sm:text-2xl sm:leading-tight";
+const CONCEPT_BODY =
+  "flex-1 text-[1.0625rem] font-normal leading-[1.8] tracking-[0.012em] text-foreground/90 [word-spacing:0.04em] sm:text-lg sm:leading-[1.85] sm:tracking-[0.015em] sm:[word-spacing:0.05em]";
+const BRANCH_TITLE =
+  "line-clamp-2 text-base font-semibold leading-snug tracking-tight transition-colors";
+
 const NODE_ACCENTS = [
   { ring: "ring-indigo-400", bg: "bg-indigo-600", leaf: "border-indigo-200/80 bg-gradient-to-br from-indigo-50/90 to-white" },
   { ring: "ring-violet-400", bg: "bg-violet-600", leaf: "border-violet-200/80 bg-gradient-to-br from-violet-50/90 to-white" },
@@ -130,7 +138,7 @@ export function ConceptLearningTree({
                     <span className="min-w-0 flex-1 pt-1.5">
                       <span
                         className={cn(
-                          "line-clamp-2 text-sm font-semibold leading-snug transition-colors",
+                          BRANCH_TITLE,
                           isSelected
                             ? "text-indigo-700"
                             : "text-foreground group-hover:text-primary",
@@ -159,11 +167,11 @@ export function ConceptLearningTree({
         <div className="flex flex-col p-5 sm:p-6">
           <div
             className={cn(
-              "flex flex-1 flex-col rounded-2xl border-2 p-5 shadow-sm transition-all sm:p-6",
+              "flex flex-1 flex-col rounded-2xl border-2 p-6 shadow-sm transition-all sm:p-8",
               accent.leaf,
             )}
           >
-            <div className="mb-4 flex items-start gap-3">
+            <div className="mb-5 flex items-start gap-4 sm:mb-6">
               <span
                 className={cn(
                   "flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white",
@@ -177,18 +185,14 @@ export function ConceptLearningTree({
                 )}
               </span>
               <div>
-                <p className="text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Concept {selectedIndex + 1}
                 </p>
-                <h4 className="mt-0.5 text-lg font-bold leading-snug">
-                  {selected.title}
-                </h4>
+                <h4 className={CONCEPT_TITLE}>{selected.title}</h4>
               </div>
             </div>
 
-            <p className="flex-1 text-sm leading-relaxed text-foreground/85">
-              {selected.explanation}
-            </p>
+            <p className={CONCEPT_BODY}>{selected.explanation}</p>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <button

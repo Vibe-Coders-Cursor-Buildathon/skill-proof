@@ -269,7 +269,7 @@ function LearnPanel({
             {mastered.size}/{course.concepts.length} concepts mastered
           </span>
         </div>
-        <p className="text-base leading-relaxed text-foreground/90">
+        <p className="text-[1.0625rem] leading-[1.75] tracking-[0.01em] text-foreground/90 [word-spacing:0.04em] sm:text-lg sm:leading-[1.8]">
           {course.summary}
         </p>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
@@ -374,7 +374,9 @@ function FlashcardsPanel({
             <span className="mb-3 rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-indigo-700">
               Question
             </span>
-            <p className="text-lg font-semibold leading-snug">{card.question}</p>
+            <p className="text-lg font-semibold leading-relaxed tracking-tight [word-spacing:0.03em] sm:text-xl sm:leading-snug">
+              {card.question}
+            </p>
             <p className="mt-6 text-xs text-muted-foreground group-hover:text-primary">
               Tap to reveal answer
             </p>
@@ -389,7 +391,7 @@ function FlashcardsPanel({
             <span className="mb-3 rounded-full bg-violet-200 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-800">
               Answer
             </span>
-            <p className="text-lg font-semibold leading-snug text-violet-950">
+            <p className="text-lg font-semibold leading-relaxed tracking-tight text-violet-950 [word-spacing:0.03em] sm:text-xl sm:leading-snug">
               {card.answer}
             </p>
           </div>
@@ -566,7 +568,9 @@ function QuizPanel({
       </div>
 
       <div className="glass-card p-6 sm:p-8">
-        <p className="text-lg font-semibold leading-snug">{question.question}</p>
+        <p className="text-lg font-semibold leading-relaxed tracking-tight [word-spacing:0.03em] sm:text-xl sm:leading-snug">
+          {question.question}
+        </p>
         <ul className="mt-6 space-y-3">
           {question.options.map((option, i) => {
             const isSelected = selected === i;
