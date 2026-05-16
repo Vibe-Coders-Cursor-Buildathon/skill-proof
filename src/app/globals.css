@@ -262,6 +262,10 @@
     @apply bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25 transition-all hover:shadow-xl hover:shadow-indigo-500/30 hover:brightness-105 active:scale-[0.99];
   }
 
+  .perspective-\[1200px\] {
+    perspective: 1200px;
+  }
+
   .pricing-surface {
     background:
       radial-gradient(ellipse 80% 60% at 50% -20%, oklch(0.88 0.08 275 / 45%), transparent),

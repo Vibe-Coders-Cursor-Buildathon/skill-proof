@@ -1,5 +1,15 @@
 import Link from "next/link";
-import { ArrowUpRight, Layers, Video, FileText, Link2, Mic } from "lucide-react";
+import {
+  ArrowUpRight,
+  BookOpen,
+  Layers,
+  Lightbulb,
+  Play,
+  Video,
+  FileText,
+  Link2,
+  Mic,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -7,6 +17,7 @@ import {
   getDifficultyLabel,
   getLanguageLabel,
 } from "@/lib/courses/labels";
+import { cn } from "@/lib/utils";
 import type { CourseRecord } from "@/types/course";
 
 const SOURCE_ICONS = {
@@ -44,29 +55,50 @@ export function DashboardCourseCard({ course }: DashboardCourseCardProps) {
   const flashcardCount = Array.isArray(course.content?.flashcards)
     ? course.content.flashcards.length
     : 0;
+  const quizCount = Array.isArray(course.content?.quiz)
+    ? course.content.quiz.length
+    : 0;
 
   return (
     <Link
       href={`/courses/${course.slug}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-white/90 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_48px_-14px_oklch(0.45_0.12_275_/_18%)]"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-white/90 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-200/80 hover:shadow-[0_20px_48px_-14px_oklch(0.45_0.12_275_/_18%)]"
     >
       <div
-        className="relative flex h-32 items-end p-4"
+        className="relative flex h-36 flex-col justify-between p-4"
         style={{
           background: `linear-gradient(135deg, oklch(0.78 0.1 ${hue}) 0%, oklch(0.58 0.16 ${hue}) 55%, oklch(0.48 0.14 ${hue + 15}) 100%)`,
         }}
       >
-        <span className="flex size-10 items-center justify-center rounded-xl bg-white/25 text-white backdrop-blur-sm">
-          <Icon className="size-5" strokeWidth={1.75} />
-        </span>
-        <span
-          className={`absolute top-3 right-3 rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold capitalize ${DIFFICULTY_STYLES[course.difficulty] ?? "border-slate-200 bg-slate-50 text-slate-600"}`}
-        >
-          {getDifficultyLabel(course.difficulty)}
-        </span>
-        <span className="absolute top-3 left-3 flex size-8 items-center justify-center rounded-full bg-white/20 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
-          <ArrowUpRight className="size-4" />
-        </span>
+        <div className="flex items-start justify-between">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-white/25 text-white backdrop-blur-sm">
+            <Icon className="size-5" strokeWidth={1.75} />
+          </span>
+          <span
+            className={cn(
+              "rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold capitalize backdrop-blur-sm",
+              DIFFICULTY_STYLES[course.difficulty] ??
+                "border-white/30 bg-white/20 text-white",
+            )}
+          >
+            {getDifficultyLabel(course.difficulty)}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[0.65rem] font-semibold text-white backdrop-blur-sm">
+            <BookOpen className="size-3" />
+            Learn
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[0.65rem] font-semibold text-white backdrop-blur-sm">
+            <Layers className="size-3" />
+            {flashcardCount}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[0.65rem] font-semibold text-white backdrop-blur-sm">
+            <Lightbulb className="size-3" />
+            {quizCount}
+          </span>
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col p-5">
@@ -89,12 +121,15 @@ export function DashboardCourseCard({ course }: DashboardCourseCardProps) {
           </p>
         )}
 
-        <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5 font-medium">
-            <Layers className="size-3.5 text-indigo-500" />
-            {conceptCount} concepts · {flashcardCount} cards
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/50 pt-4">
+          <span className="text-xs text-muted-foreground">
+            {formatCourseDate(course.created_at)}
           </span>
-          <span>{formatCourseDate(course.created_at)}</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
+            <Play className="size-3 fill-current" />
+            Continue
+            <ArrowUpRight className="size-3 opacity-70" />
+          </span>
         </div>
       </div>
     </Link>
