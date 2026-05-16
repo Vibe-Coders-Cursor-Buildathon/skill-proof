@@ -14,7 +14,7 @@ export async function generateCourseFromContent(params: {
   difficulty: string;
   sourceType: "youtube" | "pdf" | "article";
 }): Promise<CourseContent> {
-  const model = getGeminiModel("gemini-2.0-flash");
+  const model = getGeminiModel("gemini-2.5-flash");
   const langName = LANGUAGE_NAMES[params.language] ?? params.language;
 
   const prompt = `You are an expert educator. Given the following content, generate a structured micro-course.

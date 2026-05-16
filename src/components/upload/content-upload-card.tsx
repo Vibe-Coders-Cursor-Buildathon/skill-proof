@@ -413,7 +413,7 @@ export function ContentUploadCard({ onSubmit }: ContentUploadCardProps) {
         </Button>
 
         <p className="mt-4 text-center text-xs font-medium text-muted-foreground">
-          Powered by Gemini 2.0 Flash · Course ready in ~60 seconds
+          Powered by Gemini 2.5 Flash · Course ready in ~60 seconds
         </p>
     </form>
   );

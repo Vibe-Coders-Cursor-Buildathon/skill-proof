@@ -11,6 +11,6 @@ export function getGeminiClient(): GoogleGenerativeAI {
   return client;
 }
 
-export function getGeminiModel(modelId = "gemini-2.0-flash") {
+export function getGeminiModel(modelId = "gemini-2.5-flash") {
   return getGeminiClient().getGenerativeModel({ model: modelId });
 }
