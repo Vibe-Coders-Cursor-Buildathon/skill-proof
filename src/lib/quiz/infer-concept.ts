@@ -37,3 +37,20 @@ export function collectWrongConcepts(
 
   return [...wrong];
 }
+
+export function buildMissedQuestions(
+  questions: QuizQuestion[],
+  answers: { index: number; selected: number }[],
+  concepts: Concept[],
+) {
+  return answers
+    .filter((a) => questions[a.index]?.correct !== a.selected)
+    .map((a) => {
+      const q = questions[a.index];
+      return {
+        question: q.question,
+        explanation: q.explanation,
+        concept: inferConceptForQuestion(q, concepts),
+      };
+    });
+}

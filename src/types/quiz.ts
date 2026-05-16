@@ -36,11 +36,38 @@ export const adaptiveQuizResponseSchema = z.object({
 
 export type AdaptiveQuizResponse = z.infer<typeof adaptiveQuizResponseSchema>;
 
+export const knowledgeGapRequestSchema = z.object({
+  score: z.number().min(0).max(100),
+  wrongConcepts: z.array(z.string()),
+  courseTitle: z.string().min(1),
+  courseSummary: z.string().min(1),
+  concepts: z.array(
+    z.object({
+      title: z.string(),
+      explanation: z.string(),
+    }),
+  ).min(1),
+  missedQuestions: z
+    .array(
+      z.object({
+        question: z.string(),
+        explanation: z.string(),
+        concept: z.string().optional(),
+      }),
+    )
+    .optional(),
+  language: z.string().optional(),
+  difficulty: z.enum(["beginner", "intermediate", "expert"]).optional(),
+});
+
+export type KnowledgeGapRequest = z.infer<typeof knowledgeGapRequestSchema>;
+
 export const knowledgeGapSchema = z.object({
   weakAreas: z.array(
     z.object({
       concept: z.string(),
       miniLesson: z.string(),
+      keyTakeaways: z.array(z.string()).min(1).max(5),
     }),
   ),
 });

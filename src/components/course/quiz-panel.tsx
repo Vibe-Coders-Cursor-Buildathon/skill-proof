@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Brain,
   Loader2,
@@ -11,10 +11,15 @@ import {
   Zap,
 } from "lucide-react";
 
+import { WeakAreasCard } from "@/components/course/weak-areas-card";
 import { cn } from "@/lib/utils";
-import { collectWrongConcepts } from "@/lib/quiz/infer-concept";
+import {
+  buildMissedQuestions,
+  collectWrongConcepts,
+} from "@/lib/quiz/infer-concept";
 import type { Concept, QuizQuestion } from "@/types/course";
 import type { AdaptiveQuizMode } from "@/lib/prompts/adaptive-quiz";
+import type { KnowledgeGapReport } from "@/types/quiz";
 
 type QuizPanelProps = {
   initialQuestions: QuizQuestion[];
@@ -53,6 +58,11 @@ export function QuizPanel({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
+  const [weakAreas, setWeakAreas] = useState<KnowledgeGapReport | null>(null);
+  const [weakAreasLoading, setWeakAreasLoading] = useState(false);
+  const [weakAreasError, setWeakAreasError] = useState<string | null>(null);
+  const mainAnswersRef = useRef<AnswerRecord[]>([]);
+
   const question = questions[index];
   const letters = ["A", "B", "C", "D"];
 
@@ -72,7 +82,91 @@ export function QuizPanel({
     setAdaptiveMode(null);
     resetQuestionState();
     setMainPercent(0);
+    setWeakAreas(null);
+    setWeakAreasError(null);
+    mainAnswersRef.current = [];
   }, [initialQuestions, resetQuestionState]);
+
+  const fetchWeakAreas = useCallback(
+    async (mainAnswers: AnswerRecord[], percent: number) => {
+      const wrongConcepts = collectWrongConcepts(
+        initialQuestions,
+        mainAnswers,
+        concepts,
+      );
+      if (wrongConcepts.length === 0) {
+        setWeakAreas({ weakAreas: [] });
+        return;
+      }
+
+      setWeakAreasLoading(true);
+      setWeakAreasError(null);
+
+      try {
+        const res = await fetch("/api/quiz/knowledge-gap", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            score: percent,
+            wrongConcepts,
+            courseTitle,
+            courseSummary,
+            concepts: concepts.map((c) => ({
+              title: c.title,
+              explanation: c.explanation,
+            })),
+            missedQuestions: buildMissedQuestions(
+              initialQuestions,
+              mainAnswers,
+              concepts,
+            ),
+            language,
+            difficulty,
+          }),
+        });
+
+        const data = (await res.json()) as KnowledgeGapReport & {
+          error?: string;
+        };
+
+        if (!res.ok) {
+          throw new Error(data.error ?? "Could not analyse weak areas");
+        }
+
+        setWeakAreas({ weakAreas: data.weakAreas ?? [] });
+      } catch (err) {
+        setWeakAreasError(
+          err instanceof Error ? err.message : "Analysis failed",
+        );
+      } finally {
+        setWeakAreasLoading(false);
+      }
+    },
+    [
+      initialQuestions,
+      concepts,
+      courseTitle,
+      courseSummary,
+      language,
+      difficulty,
+    ],
+  );
+
+  useEffect(() => {
+    if (phase !== "main_results") return;
+    const mainAnswers = mainAnswersRef.current;
+    if (mainAnswers.length === 0) return;
+    if (weakAreas || weakAreasLoading || weakAreasError) return;
+
+    void fetchWeakAreas(mainAnswers, mainPercent);
+  }, [
+    phase,
+    mainPercent,
+    weakAreas,
+    weakAreasLoading,
+    weakAreasError,
+    fetchWeakAreas,
+  ]);
 
   const startAdaptiveRound = async (mode: AdaptiveQuizMode) => {
     setIsGenerating(true);
@@ -84,16 +178,11 @@ export function QuizPanel({
       concepts,
     );
 
-    const missedQuestions = answers
-      .filter((a) => initialQuestions[a.index]?.correct !== a.selected)
-      .map((a) => {
-        const q = initialQuestions[a.index];
-        return {
-          question: q.question,
-          explanation: q.explanation,
-          concept: q.concept,
-        };
-      });
+    const missedQuestions = buildMissedQuestions(
+      initialQuestions,
+      mainAnswersRef.current,
+      concepts,
+    );
 
     try {
       const res = await fetch("/api/quiz/adaptive", {
@@ -154,7 +243,10 @@ export function QuizPanel({
       setRevealed(false);
     } else if (round === "main") {
       const percent = Math.round((score / questions.length) * 100);
+      mainAnswersRef.current = [...answers];
       setMainPercent(percent);
+      setWeakAreas(null);
+      setWeakAreasError(null);
       setPhase("main_results");
     } else {
       setPhase("adaptive_results");
@@ -167,13 +259,19 @@ export function QuizPanel({
     answers,
     concepts,
   );
+  const mainWrongConcepts = collectWrongConcepts(
+    initialQuestions,
+    mainAnswersRef.current,
+    concepts,
+  );
 
   if (phase === "main_results") {
     const needsRemedial = mainPercent < 60;
     const needsChallenge = mainPercent > 85;
 
     return (
-      <div className="glass-card mx-auto max-w-lg p-8 text-center">
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div className="glass-card p-8 text-center">
         <Trophy
           className={cn(
             "mx-auto size-16",
@@ -197,11 +295,11 @@ export function QuizPanel({
               Score below 60% — Gemini will generate{" "}
               <strong>3 easier follow-up questions</strong> on concepts you
               missed
-              {wrongConcepts.length > 0 && (
+              {mainWrongConcepts.length > 0 && (
                 <>
                   :{" "}
                   <span className="font-medium">
-                    {wrongConcepts.slice(0, 4).join(", ")}
+                    {mainWrongConcepts.slice(0, 4).join(", ")}
                   </span>
                 </>
               )}
@@ -277,13 +375,23 @@ export function QuizPanel({
             Retry full quiz
           </button>
         </div>
+        </div>
+
+        {(mainWrongConcepts.length > 0 || weakAreasLoading) && (
+          <WeakAreasCard
+            report={weakAreas}
+            isLoading={weakAreasLoading}
+            error={weakAreasError}
+          />
+        )}
       </div>
     );
   }
 
   if (phase === "adaptive_results") {
     return (
-      <div className="glass-card mx-auto max-w-lg p-8 text-center">
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div className="glass-card p-8 text-center">
         <Trophy className="mx-auto size-16 text-indigo-500" />
         <h2 className="mt-4 text-2xl font-bold">
           {adaptiveMode === "remedial" ? "Practice complete!" : "Challenge complete!"}
@@ -308,6 +416,15 @@ export function QuizPanel({
           <RotateCcw className="size-4" />
           Retry full quiz
         </button>
+        </div>
+
+        {(mainWrongConcepts.length > 0 || weakAreasLoading) && (
+          <WeakAreasCard
+            report={weakAreas}
+            isLoading={weakAreasLoading}
+            error={weakAreasError}
+          />
+        )}
       </div>
     );
   }
