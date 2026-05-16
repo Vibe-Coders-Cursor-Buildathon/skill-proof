@@ -2,24 +2,39 @@
 
 import {
   CheckCircle2,
+  FileUp,
   GraduationCap,
+  Link2,
   Loader2,
+  Mic,
   Video,
   X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useGeneration } from "@/contexts/generation-context";
+import { getGenerationSubtitle } from "@/lib/content/generation-labels";
 import { cn } from "@/lib/utils";
+import type { SourceType } from "@/types/upload";
+
+const SOURCE_ICONS: Record<SourceType, typeof Video> = {
+  youtube: Video,
+  article: Link2,
+  pdf: FileUp,
+  audio: Mic,
+};
 
 export function CourseGenerationModal() {
   const { isOpen, steps, error, payload, closeGeneration } = useGeneration();
 
   if (!isOpen) return null;
 
-  const isYouTube = payload?.sourceType === "youtube";
+  const sourceType = payload?.sourceType ?? "youtube";
+  const SourceIcon = SOURCE_ICONS[sourceType];
   const activeStep = steps.find((s) => s.status === "active");
   const hasError = Boolean(error);
+
+  const sourceLabel = payload?.file?.name ?? payload?.url ?? null;
 
   return (
     <>
@@ -53,20 +68,16 @@ export function CourseGenerationModal() {
                   {hasError ? "Couldn't create course" : "Creating your course"}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {hasError
-                    ? error
-                    : isYouTube
-                      ? "Hang tight — we're pulling content from your video"
-                      : "Setting up your learning experience"}
+                  {hasError ? error : getGenerationSubtitle(sourceType)}
                 </p>
               </div>
             </div>
 
-            {isYouTube && payload?.url && !hasError && (
+            {sourceLabel && !hasError && (
               <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-border/60 bg-muted/30 px-3.5 py-2.5">
-                <Video className="size-4 shrink-0 text-red-500" />
+                <SourceIcon className="size-4 shrink-0 text-indigo-600" />
                 <p className="truncate text-xs font-medium text-muted-foreground">
-                  {payload.url}
+                  {sourceLabel}
                 </p>
               </div>
             )}

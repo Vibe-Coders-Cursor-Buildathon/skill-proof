@@ -1,9 +1,11 @@
 import type { Session, User } from "@supabase/supabase-js";
 import type { AuthUser } from "@/contexts/auth-context";
+import type { ProfileRole } from "@/types/plan";
 
 type ProfileRow = {
   display_name: string | null;
   credits_balance: number;
+  role?: ProfileRole;
   plans: { name: string } | { name: string }[] | null;
 };
 
@@ -31,6 +33,7 @@ export function mapSupabaseUser(
     avatarLetter: name.charAt(0).toUpperCase(),
     creditsBalance: profile?.credits_balance,
     planName: planName ?? undefined,
+    role: profile?.role,
   };
 }
 

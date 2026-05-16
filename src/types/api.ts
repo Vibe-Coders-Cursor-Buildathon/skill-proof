@@ -17,6 +17,7 @@ export type GenerateCourseRequest = z.infer<typeof generateCourseRequestSchema>;
 export const generateCourseResponseSchema = z.object({
   slug: z.string(),
   course: courseContentSchema,
+  creditsBalance: z.number().optional(),
 });
 
 export type GenerateCourseResponse = z.infer<typeof generateCourseResponseSchema>;

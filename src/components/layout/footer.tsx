@@ -4,6 +4,11 @@ import { GraduationCap } from "lucide-react";
 import { MAIN_NAV_LINKS } from "@/config/nav";
 
 export function Footer() {
+type FooterProps = {
+  variant?: "full" | "minimal";
+};
+
+export function Footer({ variant = "full" }: FooterProps) {
   return (
     <footer className="mt-auto border-t border-white/50 bg-white/40 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-4 py-12 sm:flex-row sm:px-6">
@@ -29,6 +34,22 @@ export function Footer() {
             </Link>
           ))}
         </div>
+        {variant === "full" && (
+          <div className="flex flex-wrap justify-center gap-6 text-sm font-medium text-muted-foreground sm:gap-8">
+            <Link href="/courses" className="transition-colors hover:text-primary">
+              Courses
+            </Link>
+            <Link href="/#pricing" className="transition-colors hover:text-primary">
+              Pricing
+            </Link>
+            <Link href="/#features" className="transition-colors hover:text-primary">
+              Features
+            </Link>
+            <Link href="/#how-it-works" className="transition-colors hover:text-primary">
+              How it works
+            </Link>
+          </div>
+        )}
       </div>
     </footer>
   );

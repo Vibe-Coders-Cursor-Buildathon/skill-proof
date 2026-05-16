@@ -57,6 +57,7 @@ Apply migrations in order in the Supabase SQL Editor (or `supabase db push`):
 | `00005_credit_packs.sql` | Purchasable credit bundles |
 | `00006_courses_ownership.sql` | Course ownership, publish, edit columns |
 | `00007_rls_policies.sql` | Row Level Security policies |
+| `00008_profile_roles.sql` | Profile roles (`customer` / `admin`) + admin RLS |
 
 ### Scripts
 
@@ -66,12 +67,14 @@ Apply migrations in order in the Supabase SQL Editor (or `supabase db push`):
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
+| `npm run seed:admin` | Create dev admin user (`admin@gmail.com` / `admin`) |
 
 ## Auth and plans
 
 - **Sign up / sign in:** `/auth/signup`, `/auth/login` (email + Google)
 - **Dashboard:** `/dashboard` (credits balance, current plan)
-- **Single user role** — capabilities come from the assigned plan
+- **Profile roles:** `customer` (default) or `admin` on `profiles.role`. Plan features still control product capabilities; admins get the **Admin panel** at `/admin`.
+- **Dev admin account:** After migrations, run `npm run seed:admin`, then sign in with `admin@gmail.com` / `admin`. Change this password in production.
 - **4 plans:** `basic`, `professional`, `premium`, `enterprise`
 - **Feature flags** live in `plans.features` (JSONB) — edit in Supabase without code changes
 - **TypeScript mirror:** [`src/config/plan-features.ts`](src/config/plan-features.ts)
