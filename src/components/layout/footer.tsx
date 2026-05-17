@@ -101,11 +101,11 @@ export function Footer({ variant = "full" }: FooterProps) {
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} SkillProof. All rights reserved.
           </p>
-          <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          {/* <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             Built with{" "}
             <Heart className="size-3.5 text-rose-500" fill="currentColor" />{" "}
             using Cursor & Gemini
-          </p>
+          </p> */}
         </div>
       </div>
     </footer>
