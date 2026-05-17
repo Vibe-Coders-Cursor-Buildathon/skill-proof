@@ -40,9 +40,10 @@ export default async function CheckoutSuccessPage({
       const result = await confirmCheckoutSessionForUser(sessionId, user.id);
       if (result.fulfilled) {
         if (result.checkoutType === "course") {
-          redirect(
-            `/courses/${result.courseSlug ?? courseSlug ?? ""}?purchased=1`,
-          );
+          const slug = result.courseSlug ?? courseSlug;
+          if (slug) {
+            redirect(`/dashboard?tab=paid&purchased=${slug}`);
+          }
         }
         if (result.checkoutType === "credits") {
           creditsPurchased = result.creditsGranted;

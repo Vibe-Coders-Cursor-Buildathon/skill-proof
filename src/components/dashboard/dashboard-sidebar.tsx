@@ -4,6 +4,7 @@ import {
   CreditCard,
   LayoutDashboard,
   Plus,
+  ShoppingBag,
   Sparkles,
 } from "lucide-react";
 
@@ -45,6 +46,7 @@ type DashboardSidebarProps = {
   planName: string;
   credits: number;
   courseCount: number;
+  paidCourseCount: number;
 };
 
 export function DashboardSidebar({
@@ -56,6 +58,7 @@ export function DashboardSidebar({
   planName,
   credits,
   courseCount,
+  paidCourseCount,
 }: DashboardSidebarProps) {
   const firstName = displayName.split(" ")[0] ?? displayName;
   const lowCredits = credits <= 1;
@@ -103,7 +106,9 @@ export function DashboardSidebar({
             const badge =
               item.id === "courses" && courseCount > 0
                 ? courseCount
-                : item.id === "plan" && lowCredits
+                : item.id === "paid" && paidCourseCount > 0
+                  ? paidCourseCount
+                  : item.id === "plan" && lowCredits
                   ? "!"
                   : undefined;
 

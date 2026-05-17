@@ -21,6 +21,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isStripeConfigured } from "@/lib/stripe/server";
 
 const bodySchema = z.union([
+  z.object({ courseSlug: z.string().min(1) }),
   z.object({ planId: z.string() }),
   z.object({ credits: z.number().int() }),
 ]);

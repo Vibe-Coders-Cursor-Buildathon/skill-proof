@@ -6,13 +6,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { DashboardContentHeader } from "@/components/dashboard/dashboard-content-header";
 import { DashboardCoursesSection } from "@/components/dashboard/dashboard-courses-section";
 import { DashboardOverviewTab } from "@/components/dashboard/dashboard-overview-tab";
+import { DashboardPaidCoursesSection } from "@/components/dashboard/dashboard-paid-courses-section";
 import { DashboardPlanTab } from "@/components/dashboard/dashboard-plan-tab";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import type { CourseRecord } from "@/types/course";
+import type { PurchasedCourse } from "@/types/purchased-course";
 
-export type DashboardTabId = "overview" | "courses" | "plan";
+export type DashboardTabId = "overview" | "courses" | "paid" | "plan";
 
-const TAB_IDS: DashboardTabId[] = ["overview", "courses", "plan"];
+const TAB_IDS: DashboardTabId[] = ["overview", "courses", "paid", "plan"];
 
 type DashboardTabsProps = {
   displayName: string;
@@ -22,6 +24,7 @@ type DashboardTabsProps = {
   credits: number;
   creditsMax: number;
   courses: CourseRecord[];
+  purchasedCourses: PurchasedCourse[];
   canEditCourse?: boolean;
 };
 
@@ -33,6 +36,7 @@ export function DashboardTabs({
   credits,
   creditsMax,
   courses,
+  purchasedCourses,
   canEditCourse = false,
 }: DashboardTabsProps) {
   const router = useRouter();
@@ -74,6 +78,7 @@ export function DashboardTabs({
           planName={planName}
           credits={credits}
           courseCount={courses.length}
+          paidCourseCount={purchasedCourses.length}
         />
 
         <main className="min-w-0 flex-1">
@@ -97,6 +102,10 @@ export function DashboardTabs({
               embedded
               canEditCourse={canEditCourse}
             />
+          )}
+
+          {activeTab === "paid" && (
+            <DashboardPaidCoursesSection purchasedCourses={purchasedCourses} />
           )}
 
           {activeTab === "plan" && (
