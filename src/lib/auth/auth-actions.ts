@@ -49,7 +49,17 @@ export function markOAuthPendingAction() {
 
 /** Clears the Supabase session cookie on the server (required for Next.js App Router). */
 export async function signOutOnServer(): Promise<void> {
-  await fetch("/api/auth/signout", { method: "POST", credentials: "same-origin" });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    await fetch("/api/auth/signout", {
+      method: "POST",
+      credentials: "same-origin",
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export function consumeOAuthPendingAction(): boolean {
