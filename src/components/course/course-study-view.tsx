@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
   BookOpen,
@@ -17,11 +17,19 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { CertificateEarnFlow } from "@/components/certificate/certificate-earn-flow";
+import { CERTIFICATE_PASS_PERCENT } from "@/lib/certificates/constants";
+import { getQuizPassForCourse } from "@/lib/certificates/quiz-pass-storage";
 import { ConceptLearningTree } from "@/components/course/concept-learning-tree";
 import { CourseUnlockPanel } from "@/components/course/course-unlock-panel";
 import { PublishCoursePanel } from "@/components/course/publish-course-panel";
 import { QuizPanel } from "@/components/course/quiz-panel";
 import { formatPriceCents } from "@/config/pricing";
+import { computeCourseProgressPercent } from "@/lib/courses/course-progress";
+import {
+  loadCourseProgress,
+  saveCourseProgress,
+} from "@/lib/courses/course-progress-storage";
 import type { PublishStatus } from "@/lib/courses/publish-status";
 
 import { cn } from "@/lib/utils";
@@ -92,24 +100,53 @@ export function CourseStudyView({
   const totals = fullCourse ?? course;
   const showPreviewGate = isPaidPublic && !hasFullAccess;
   const [activeTab, setActiveTab] = useState<StudyTab>("learn");
-  const [masteredConcepts, setMasteredConcepts] = useState<Set<number>>(new Set());
+  const [masteredConcepts, setMasteredConcepts] = useState<Set<number>>(() => {
+    const stored = loadCourseProgress(meta.slug);
+    return new Set(stored.masteredConcepts);
+  });
   const [flashcardIndex, setFlashcardIndex] = useState(0);
   const [flashcardFlipped, setFlashcardFlipped] = useState(false);
-  const [knownCards, setKnownCards] = useState<Set<number>>(new Set());
+  const [knownCards, setKnownCards] = useState<Set<number>>(() => {
+    const stored = loadCourseProgress(meta.slug);
+    return new Set(stored.knownFlashcards);
+  });
+  const [quizScorePercent, setQuizScorePercent] = useState<number | null>(() =>
+    getQuizPassForCourse(meta.slug),
+  );
+
+  useEffect(() => {
+    saveCourseProgress(meta.slug, {
+      masteredConcepts: [...masteredConcepts],
+      knownFlashcards: [...knownCards],
+    });
+  }, [meta.slug, masteredConcepts, knownCards]);
+
+  useEffect(() => {
+    setQuizScorePercent(getQuizPassForCourse(meta.slug));
+  }, [meta.slug, activeTab]);
 
   const difficulty =
     DIFFICULTY_STYLES[meta.difficulty] ?? DIFFICULTY_STYLES.beginner;
 
-  const learnProgress = Math.round(
-    (masteredConcepts.size / course.concepts.length) * 100,
-  );
-  const flashProgress = Math.round(
-    (knownCards.size / course.flashcards.length) * 100,
-  );
+  const learnProgress =
+    course.concepts.length > 0
+      ? Math.round((masteredConcepts.size / course.concepts.length) * 100)
+      : 0;
+  const flashProgress =
+    course.flashcards.length > 0
+      ? Math.round((knownCards.size / course.flashcards.length) * 100)
+      : 0;
 
-  const overallProgress = Math.round(
-    (learnProgress + flashProgress) / 2,
-  );
+  const quizPassed =
+    quizScorePercent != null &&
+    quizScorePercent >= CERTIFICATE_PASS_PERCENT;
+  const overallProgress = computeCourseProgressPercent({
+    masteredConcepts: masteredConcepts.size,
+    totalConcepts: course.concepts.length,
+    knownFlashcards: knownCards.size,
+    totalFlashcards: course.flashcards.length,
+    quizPassed: quizScorePercent != null ? quizPassed : undefined,
+  });
 
   const toggleMastered = useCallback((index: number) => {
     setMasteredConcepts((prev) => {
@@ -216,6 +253,18 @@ export function CourseStudyView({
         </div>
       </div>
 
+      {certificatesEnabled && hasFullAccess && !showPreviewGate && (
+        <CertificateEarnFlow
+          courseSlug={meta.slug}
+          courseTitle={totals.title}
+          courseProgressPercent={overallProgress}
+          masteredConcepts={masteredConcepts.size}
+          knownFlashcards={knownCards.size}
+          quizScorePercent={quizScorePercent}
+          isSignedIn={isSignedIn}
+        />
+      )}
+
       {canPublish && publishSlotsMax > 0 && (
         <div className="mt-6">
           <PublishCoursePanel
@@ -292,6 +341,12 @@ export function CourseStudyView({
             courseSlug={meta.slug}
             certificatesEnabled={certificatesEnabled && !showPreviewGate}
             isSignedIn={isSignedIn}
+            courseProgressPercent={overallProgress}
+            masteredConcepts={masteredConcepts.size}
+            knownFlashcards={knownCards.size}
+            onQuizPassed={(percent) => {
+              setQuizScorePercent(percent);
+            }}
           />
         )}
       </div>

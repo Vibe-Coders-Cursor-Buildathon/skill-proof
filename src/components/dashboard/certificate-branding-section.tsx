@@ -113,9 +113,9 @@ export function CertificateBrandingSection() {
           </p>
           <h3 className="mt-1 text-xl font-bold">Your logo on learner certificates</h3>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            When learners complete your published courses with a passing quiz score
-            (70%+), SkillProof issues a certificate with your organization name and
-            logo alongside the learner&apos;s name and course title.
+            When learners complete more than 80% of your published course (learn +
+            flashcards) and pass the quiz (70%+), SkillProof issues a certificate
+            with your organization name and logo.
           </p>
         </div>
       </div>

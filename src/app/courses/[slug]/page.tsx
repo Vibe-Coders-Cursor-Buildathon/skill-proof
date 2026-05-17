@@ -78,6 +78,8 @@ export default async function CourseSlugPage({
     effective.title,
     data.certificates_enabled === true,
     data.user_id,
+    data.is_published === true,
+    data.publish_status ?? null,
   );
   const certificatesEnabled = Boolean(certConfig?.enabled);
 

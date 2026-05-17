@@ -9,8 +9,14 @@ export async function getCourseCertificateConfig(
   courseTitle: string,
   certificatesEnabled: boolean,
   ownerUserId: string | null,
+  isPublished = false,
+  publishStatus: string | null = null,
 ): Promise<CourseCertificateConfig | null> {
-  if (!certificatesEnabled || !ownerUserId) {
+  const publishedLive =
+    isPublished &&
+    (publishStatus === "approved" || publishStatus === null);
+
+  if ((!certificatesEnabled && !publishedLive) || !ownerUserId) {
     return null;
   }
 

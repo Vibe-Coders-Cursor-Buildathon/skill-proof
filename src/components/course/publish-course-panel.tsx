@@ -122,8 +122,9 @@ export function PublishCoursePanel({
           <p className="mt-1 text-sm text-muted-foreground">
             Submit this course for admin review to list it on the public
             courses page. Set a price — visitors get a free preview, then pay
-            to unlock all content. Learners who pass the quiz (70%+) receive a
-            SkillProof certificate with your logo from the Plan tab. Your
+            to unlock all content. Learners who complete more than 80% of the
+            course and pass the quiz (70%+) receive a SkillProof certificate with
+            your logo from the Plan tab. Your
             Business plan includes up to <strong>{publishSlotsMax}</strong> live
             or pending courses ({slotsRemaining} slot
             {slotsRemaining === 1 ? "" : "s"} left).

@@ -11,7 +11,9 @@ import {
   Zap,
 } from "lucide-react";
 
-import { CertificateQuizResult } from "@/components/certificate/certificate-quiz-result";
+import { CERTIFICATE_MIN_COURSE_PROGRESS_PERCENT, CERTIFICATE_PASS_PERCENT } from "@/lib/certificates/constants";
+import { saveQuizPassForCourse } from "@/lib/certificates/quiz-pass-storage";
+import { meetsCertificateCourseProgress } from "@/lib/courses/course-progress";
 import { WeakAreasCard } from "@/components/course/weak-areas-card";
 import { cn } from "@/lib/utils";
 import {
@@ -34,6 +36,10 @@ type QuizPanelProps = {
   courseSlug?: string;
   certificatesEnabled?: boolean;
   isSignedIn?: boolean;
+  courseProgressPercent?: number;
+  masteredConcepts?: number;
+  knownFlashcards?: number;
+  onQuizPassed?: (scorePercent: number) => void;
 };
 
 type AnswerRecord = { index: number; selected: number };
@@ -49,6 +55,10 @@ export function QuizPanel({
   courseSlug,
   certificatesEnabled = false,
   isSignedIn = false,
+  courseProgressPercent = 0,
+  masteredConcepts = 0,
+  knownFlashcards = 0,
+  onQuizPassed,
 }: QuizPanelProps) {
   const [round, setRound] = useState<"main" | "adaptive">("main");
   const [questions, setQuestions] = useState(initialQuestions);
@@ -258,6 +268,10 @@ export function QuizPanel({
       setWeakAreas(null);
       setWeakAreasError(null);
       setPhase("main_results");
+      if (percent >= CERTIFICATE_PASS_PERCENT && courseSlug) {
+        saveQuizPassForCourse(courseSlug, percent);
+        onQuizPassed?.(percent);
+      }
     } else {
       setPhase("adaptive_results");
     }
@@ -400,12 +414,15 @@ export function QuizPanel({
         </div>
         </div>
 
-        {certificatesEnabled && courseSlug && (
-          <CertificateQuizResult
-            courseSlug={courseSlug}
-            quizScorePercent={mainPercent}
-            isSignedIn={isSignedIn}
-          />
+        {certificatesEnabled && mainPercent >= CERTIFICATE_PASS_PERCENT && (
+          <div className="rounded-2xl border border-violet-200/80 bg-violet-50/90 px-4 py-4 text-left text-sm text-violet-950">
+            <p className="font-semibold">Quiz passed!</p>
+            <p className="mt-2 leading-relaxed">
+              {meetsCertificateCourseProgress(courseProgressPercent)
+                ? "Your certificate popup should appear shortly — check the banner above or scroll up."
+                : `Complete more than ${CERTIFICATE_MIN_COURSE_PROGRESS_PERCENT}% of the course (learn + flashcards + quiz) to unlock your certificate. You are at ${courseProgressPercent}%.`}
+            </p>
+          </div>
         )}
 
         {(mainWrongConcepts.length > 0 || weakAreasLoading) && (

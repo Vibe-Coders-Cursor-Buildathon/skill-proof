@@ -12,10 +12,17 @@ import { resolveCourseAccess } from "@/lib/courses/course-access";
 import { getCourseCertificateConfig } from "@/lib/certificates/course-certificate-config";
 import { CERTIFICATE_PASS_PERCENT } from "@/lib/certificates/constants";
 import { issueCertificate } from "@/lib/certificates/issue-certificate";
+import {
+  CERTIFICATE_MIN_COURSE_PROGRESS_PERCENT,
+  computeCourseProgressPercent,
+  meetsCertificateCourseProgress,
+} from "@/lib/courses/course-progress";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const postSchema = z.object({
   quiz_score_percent: z.number().int().min(0).max(100),
+  mastered_concepts: z.number().int().min(0),
+  known_flashcards: z.number().int().min(0),
 });
 
 type RouteContext = { params: Promise<{ slug: string }> };
@@ -113,6 +120,37 @@ export async function POST(request: Request, context: RouteContext) {
     const effective = getEffectiveCourseContent(course.content, course.content_edited);
     if (!effective) {
       return NextResponse.json({ error: "Invalid course content" }, { status: 400 });
+    }
+
+    const totalConcepts = effective.concepts.length;
+    const totalFlashcards = effective.flashcards.length;
+
+    if (
+      parsed.data.mastered_concepts > totalConcepts ||
+      parsed.data.known_flashcards > totalFlashcards
+    ) {
+      return NextResponse.json({ error: "Invalid course progress" }, { status: 400 });
+    }
+
+    const quizPassed =
+      parsed.data.quiz_score_percent >= CERTIFICATE_PASS_PERCENT;
+
+    const courseProgressPercent = computeCourseProgressPercent({
+      masteredConcepts: parsed.data.mastered_concepts,
+      totalConcepts,
+      knownFlashcards: parsed.data.known_flashcards,
+      totalFlashcards,
+      quizPassed,
+    });
+
+    if (!meetsCertificateCourseProgress(courseProgressPercent)) {
+      return NextResponse.json(
+        {
+          error: `Complete more than ${CERTIFICATE_MIN_COURSE_PROGRESS_PERCENT}% of the course (learn + flashcards) before requesting your certificate.`,
+          course_progress_percent: courseProgressPercent,
+        },
+        { status: 400 },
+      );
     }
 
     const certConfig = await getCourseCertificateConfig(

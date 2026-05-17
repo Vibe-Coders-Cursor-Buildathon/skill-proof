@@ -4,52 +4,43 @@ import { useEffect, useRef, useState } from "react";
 import { Award, Loader2 } from "lucide-react";
 
 import { CertificateActions } from "@/components/certificate/certificate-actions";
-import {
-  CERTIFICATE_MIN_COURSE_PROGRESS_PERCENT,
-  CERTIFICATE_PASS_PERCENT,
-} from "@/lib/certificates/constants";
-import { saveQuizPassForCourse } from "@/lib/certificates/quiz-pass-storage";
+import { CERTIFICATE_PASS_PERCENT } from "@/lib/certificates/constants";
+import { getQuizPassForCourse } from "@/lib/certificates/quiz-pass-storage";
 import { meetsCertificateCourseProgress } from "@/lib/courses/course-progress";
 import type { CertificateRecord } from "@/types/certificate";
 
-type CertificateQuizResultProps = {
+type CertificateCourseProgressProps = {
   courseSlug: string;
-  quizScorePercent: number;
   courseProgressPercent: number;
   masteredConcepts: number;
   knownFlashcards: number;
   isSignedIn: boolean;
 };
 
-export function CertificateQuizResult({
+export function CertificateCourseProgress({
   courseSlug,
-  quizScorePercent,
   courseProgressPercent,
   masteredConcepts,
   knownFlashcards,
   isSignedIn,
-}: CertificateQuizResultProps) {
+}: CertificateCourseProgressProps) {
   const [certificate, setCertificate] = useState<CertificateRecord | null>(null);
   const [isIssuing, setIsIssuing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const issueAttempted = useRef(false);
 
-  const quizPassed = quizScorePercent >= CERTIFICATE_PASS_PERCENT;
+  const quizScore = getQuizPassForCourse(courseSlug);
+  const quizPassed =
+    quizScore != null && quizScore >= CERTIFICATE_PASS_PERCENT;
   const courseReady = meetsCertificateCourseProgress(courseProgressPercent);
-  const canRequest = quizPassed && courseReady;
-
-  useEffect(() => {
-    if (quizPassed) {
-      saveQuizPassForCourse(courseSlug, quizScorePercent);
-    }
-  }, [courseSlug, quizPassed, quizScorePercent]);
+  const canRequest = isSignedIn && quizPassed && courseReady;
 
   useEffect(() => {
     if (!canRequest) {
       issueAttempted.current = false;
       return;
     }
-    if (!isSignedIn || issueAttempted.current) {
+    if (issueAttempted.current) {
       return;
     }
 
@@ -79,7 +70,7 @@ export function CertificateQuizResult({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              quiz_score_percent: quizScorePercent,
+              quiz_score_percent: quizScore,
               mastered_concepts: masteredConcepts,
               known_flashcards: knownFlashcards,
             }),
@@ -118,47 +109,18 @@ export function CertificateQuizResult({
   }, [
     canRequest,
     courseSlug,
-    isSignedIn,
     knownFlashcards,
     masteredConcepts,
-    quizScorePercent,
+    quizScore,
   ]);
 
-  if (!isSignedIn) {
-    return (
-      <div className="rounded-2xl border border-indigo-200/80 bg-indigo-50/90 px-4 py-4 text-left text-sm text-indigo-950">
-        <p className="font-semibold">Certificate available</p>
-        <p className="mt-2 leading-relaxed">
-          Sign in to receive your completion certificate for this course.
-        </p>
-      </div>
-    );
-  }
-
-  if (!quizPassed) {
+  if (!courseReady || !quizPassed) {
     return null;
-  }
-
-  if (!courseReady) {
-    return (
-      <div className="rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-4 text-left text-sm text-amber-950">
-        <p className="flex items-center gap-2 font-semibold">
-          <Award className="size-4 shrink-0" />
-          Quiz passed — finish the course for your certificate
-        </p>
-        <p className="mt-2 leading-relaxed">
-          You scored {quizScorePercent}% on the quiz. Complete more than{" "}
-          {CERTIFICATE_MIN_COURSE_PROGRESS_PERCENT}% of the course (learn +
-          flashcards) to request your certificate. You are at{" "}
-          <strong>{courseProgressPercent}%</strong>.
-        </p>
-      </div>
-    );
   }
 
   if (isIssuing && !certificate) {
     return (
-      <div className="flex items-center justify-center gap-2 rounded-2xl border border-border/60 bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
+      <div className="mb-6 flex items-center justify-center gap-2 rounded-2xl border border-border/60 bg-muted/30 px-4 py-4 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" />
         Generating your certificate…
       </div>
@@ -167,29 +129,29 @@ export function CertificateQuizResult({
 
   if (error) {
     return (
-      <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+      <p className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
         {error}
       </p>
     );
   }
 
-  if (!certificate) {
-    return null;
+  if (certificate) {
+    return (
+      <div className="mb-6 space-y-4 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-orange-50/50 p-5">
+        <div className="flex items-center gap-3">
+          <Award className="size-7 text-amber-600" />
+          <div>
+            <p className="font-bold text-amber-950">Certificate ready</p>
+            <p className="mt-1 text-sm text-amber-900/80">
+              Course progress {courseProgressPercent}% — download your
+              certificate below.
+            </p>
+          </div>
+        </div>
+        <CertificateActions certificate={certificate} compact />
+      </div>
+    );
   }
 
-  return (
-    <div className="space-y-4 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-orange-50/50 p-6">
-      <div className="flex items-center gap-3">
-        <Award className="size-8 text-amber-600" />
-        <div>
-          <p className="font-bold text-amber-950">Certificate earned!</p>
-          <p className="mt-1 text-sm text-amber-900/80">
-            You completed {courseProgressPercent}% of the course and passed the
-            quiz ({quizScorePercent}%). Download or share your certificate below.
-          </p>
-        </div>
-      </div>
-      <CertificateActions certificate={certificate} compact />
-    </div>
-  );
+  return null;
 }
