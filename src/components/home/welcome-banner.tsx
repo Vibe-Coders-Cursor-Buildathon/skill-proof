@@ -20,7 +20,11 @@ export function WelcomeBanner({
       role="status"
       className="mx-auto mb-6 max-w-2xl animate-in fade-in-0 slide-in-from-top-2 duration-500"
     >
-      <div className="relative overflow-hidden rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 via-white to-indigo-50/80 p-5 shadow-md shadow-emerald-500/10 sm:p-6">
+      <div className="relative isolate overflow-hidden rounded-3xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 via-white to-indigo-50/80 p-5 shadow-lg shadow-emerald-500/10 sm:p-6">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-16 -right-16 -z-10 h-44 w-44 rounded-full bg-gradient-to-br from-emerald-200/40 to-transparent blur-3xl"
+        />
         <button
           type="button"
           onClick={onDismiss}
@@ -31,17 +35,18 @@ export function WelcomeBanner({
         </button>
 
         <div className="flex gap-4 pr-8">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/25">
             <CheckCircle2 className="size-6" strokeWidth={2.25} />
           </span>
           <div className="min-w-0 space-y-2">
-            <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
+            <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">
               Email confirmed
             </p>
-            <h2 className="text-lg font-bold tracking-tight text-foreground sm:text-xl">
-              Welcome, {firstName}! You&apos;re ready to create your first course.
+            <h2 className="text-balance text-lg font-bold tracking-tight text-foreground sm:text-xl">
+              Welcome, {firstName}! You&apos;re ready to create your first
+              course.
             </h2>
-            <p className="text-sm leading-relaxed text-muted-foreground">
+            <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
               {hasSavedLink
                 ? "We saved your link below. Review it and click Generate course — we'll extract the transcript and build your course."
                 : "Paste a YouTube link below, pick language and difficulty, then click Generate course."}
