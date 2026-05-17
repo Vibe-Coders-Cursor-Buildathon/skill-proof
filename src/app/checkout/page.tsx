@@ -74,6 +74,11 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
     redirect(`/?auth=signin&redirect=${returnTo}`);
   }
 
+  // Block re-subscribing to the same plan via direct URL.
+  if (user.planName && user.planName.toLowerCase() === planParam) {
+    redirect(`/dashboard?tab=plan&already_subscribed=${planParam}`);
+  }
+
   const plan = getPricingPlan(planParam);
 
   return (

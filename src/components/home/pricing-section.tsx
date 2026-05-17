@@ -1,5 +1,6 @@
+"use client";
+
 import {
-  ArrowRight,
   BookOpen,
   Building2,
   Check,
@@ -10,7 +11,8 @@ import {
 } from "lucide-react";
 
 import { PlanSelectButton } from "@/components/pricing/plan-select-button";
-import { PRICING_PLANS } from "@/config/pricing";
+import { useAuth } from "@/contexts/auth-context";
+import { isPricingPlanId, PRICING_PLANS } from "@/config/pricing";
 import type { PricingPlan, PricingPlanId } from "@/config/pricing";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +60,20 @@ const PLAN_ACCENT: Record<
   },
 };
 
-export function PricingSection({ className }: { className?: string }) {
+type PricingSectionProps = {
+  className?: string;
+};
+
+function planIdFromName(planName?: string): PricingPlanId | null {
+  if (!planName) return null;
+  const lowered = planName.toLowerCase();
+  return isPricingPlanId(lowered) ? lowered : null;
+}
+
+export function PricingSection({ className }: PricingSectionProps) {
+  const { user } = useAuth();
+  const currentPlanId = user ? planIdFromName(user.planName) : null;
+
   return (
     <section className={cn("relative overflow-hidden", className ?? "py-3")}>
       <div
@@ -86,7 +101,11 @@ export function PricingSection({ className }: { className?: string }) {
         {/* Cards */}
         <div className="mt-16 grid gap-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
           {PRICING_PLANS.map((plan) => (
-            <PricingCard key={plan.id} plan={plan} />
+            <PricingCard
+              key={plan.id}
+              plan={plan}
+              currentPlanId={currentPlanId}
+            />
           ))}
         </div>
 
@@ -110,10 +129,17 @@ export function PricingSection({ className }: { className?: string }) {
   );
 }
 
-function PricingCard({ plan }: { plan: PricingPlan }) {
+function PricingCard({
+  plan,
+  currentPlanId,
+}: {
+  plan: PricingPlan;
+  currentPlanId: PricingPlanId | null;
+}) {
   const Icon = PLAN_ICONS[plan.id];
   const accent = PLAN_ACCENT[plan.id];
   const isFeatured = !!plan.highlighted;
+  const isCurrent = currentPlanId === plan.id;
   const canPublish = (plan.publishLimit ?? 0) > 0;
   const included = plan.features.filter((f) => f.included);
   const excluded = plan.features.filter((f) => !f.included);
@@ -125,19 +151,28 @@ function PricingCard({ plan }: { plan: PricingPlan }) {
         isFeatured
           ? "pricing-card-featured z-10 xl:scale-[1.03] xl:-translate-y-1"
           : "border border-white/90 bg-white/85 shadow-[0_4px_32px_-8px_oklch(0.45_0.08_275_/_12%)] backdrop-blur-md hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-10px_oklch(0.45_0.1_275_/_16%)]",
+        isCurrent &&
+          "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-transparent",
       )}
     >
       {/* Top gradient bar */}
       <div className={cn("h-1 w-full bg-gradient-to-r", accent.bar)} />
 
       <div className="flex flex-1 flex-col p-6 pt-5">
-        {/* Featured badge — in flow, no overlap */}
-        {isFeatured && (
+        {/* Featured / Current plan badge — in flow, no overlap */}
+        {(isFeatured || isCurrent) && (
           <div className="mb-4 flex justify-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1 text-[0.6875rem] font-bold uppercase tracking-widest text-white shadow-md shadow-indigo-500/25">
-              <Sparkles className="size-3" />
-              Best value
-            </span>
+            {isCurrent ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1 text-[0.6875rem] font-bold uppercase tracking-widest text-white shadow-md shadow-emerald-500/25">
+                <Check className="size-3" strokeWidth={3} />
+                Your plan
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1 text-[0.6875rem] font-bold uppercase tracking-widest text-white shadow-md shadow-indigo-500/25">
+                <Sparkles className="size-3" />
+                Best value
+              </span>
+            )}
           </div>
         )}
 
@@ -255,19 +290,21 @@ function PricingCard({ plan }: { plan: PricingPlan }) {
         {/* CTA */}
         <PlanSelectButton
           planId={plan.id}
+          defaultLabel={plan.cta}
+          featuredArrow={isFeatured}
+          currentPlanId={currentPlanId}
+          variant={isFeatured ? "default" : "outline"}
           className={cn(
             "mt-8 h-12 w-full rounded-xl text-sm font-semibold",
             isFeatured
-              ? "btn-gradient border-0 shadow-lg"
+              ? "btn-gradient border-0 shadow-lg disabled:opacity-100 disabled:hover:brightness-100"
               : plan.id === "free"
                 ? "border-2 border-slate-200 bg-white text-foreground hover:bg-slate-50"
                 : "border-2 border-indigo-200/80 bg-white text-indigo-700 hover:border-indigo-300 hover:bg-indigo-50/50",
+            isCurrent &&
+              "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-50",
           )}
-          variant={isFeatured ? "default" : "outline"}
-        >
-          {plan.cta}
-          {isFeatured && <ArrowRight className="size-4" />}
-        </PlanSelectButton>
+        />
       </div>
     </article>
   );
