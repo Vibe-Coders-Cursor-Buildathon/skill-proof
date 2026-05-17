@@ -10,7 +10,7 @@ export function PageShell({
   wide?: boolean;
 }) {
   return (
-    <div className="bg-mesh bg-grid-pattern relative min-h-screen">
+    <div className="bg-mesh bg-grid-pattern relative flex min-h-screen flex-col">
       <Header />
       <main
         className={cn(
