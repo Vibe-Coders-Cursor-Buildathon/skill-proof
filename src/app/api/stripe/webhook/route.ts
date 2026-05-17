@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 
 import type { PricingPlanId } from "@/config/pricing";
 import { isPricingPlanId } from "@/config/pricing";
+import { fulfillCoursePurchase } from "@/lib/stripe/fulfill-course";
 import { fulfillCreditPurchase } from "@/lib/stripe/fulfill-credits";
 import { fulfillPlanPurchase } from "@/lib/stripe/fulfill-plan";
 import { getStripe, getStripeWebhookSecret } from "@/lib/stripe/server";
@@ -55,6 +56,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   const checkoutType = session.metadata?.checkout_type ?? "plan";
+
+  if (checkoutType === "course") {
+    const courseId = session.metadata?.course_id;
+    const priceCents = Number(session.metadata?.price_cents);
+    if (!courseId || !Number.isInteger(priceCents) || priceCents < 1) {
+      console.error("[stripe webhook] invalid course metadata", session.id);
+      return;
+    }
+    await fulfillCoursePurchase({
+      userId,
+      courseId,
+      priceCents,
+      stripeSessionId: session.id,
+    });
+    return;
+  }
 
   if (checkoutType === "credits") {
     const creditAmount = Number(session.metadata?.credit_amount);

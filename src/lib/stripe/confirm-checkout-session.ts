@@ -1,5 +1,6 @@
 import type { PricingPlanId } from "@/config/pricing";
 import { isPricingPlanId } from "@/config/pricing";
+import { fulfillCoursePurchase } from "@/lib/stripe/fulfill-course";
 import { fulfillCreditPurchase } from "@/lib/stripe/fulfill-credits";
 import { fulfillPlanPurchase } from "@/lib/stripe/fulfill-plan";
 import { getStripe } from "@/lib/stripe/server";
@@ -24,6 +25,12 @@ export type ConfirmCheckoutResult =
       checkoutType: "credits";
       alreadyFulfilled: boolean;
       creditsGranted: number;
+    }
+  | {
+      fulfilled: true;
+      checkoutType: "course";
+      alreadyFulfilled: boolean;
+      courseSlug: string;
     };
 
 /**
@@ -49,6 +56,35 @@ export async function confirmCheckoutSessionForUser(
   }
 
   const checkoutType = session.metadata?.checkout_type ?? "plan";
+
+  if (checkoutType === "course") {
+    const courseId = session.metadata?.course_id;
+    const courseSlug = session.metadata?.course_slug;
+    const priceCents = Number(session.metadata?.price_cents);
+
+    if (
+      !courseId ||
+      !courseSlug ||
+      !Number.isInteger(priceCents) ||
+      priceCents < 1
+    ) {
+      return { fulfilled: false, reason: "invalid_checkout" };
+    }
+
+    const result = await fulfillCoursePurchase({
+      userId,
+      courseId,
+      priceCents,
+      stripeSessionId: session.id,
+    });
+
+    return {
+      fulfilled: true,
+      checkoutType: "course",
+      alreadyFulfilled: result.alreadyFulfilled,
+      courseSlug,
+    };
+  }
 
   if (checkoutType === "credits") {
     const creditAmount = Number(session.metadata?.credit_amount);

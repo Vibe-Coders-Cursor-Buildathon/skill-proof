@@ -18,8 +18,10 @@ import {
 } from "lucide-react";
 
 import { ConceptLearningTree } from "@/components/course/concept-learning-tree";
+import { CourseUnlockPanel } from "@/components/course/course-unlock-panel";
 import { PublishCoursePanel } from "@/components/course/publish-course-panel";
 import { QuizPanel } from "@/components/course/quiz-panel";
+import { formatPriceCents } from "@/config/pricing";
 import type { PublishStatus } from "@/lib/courses/publish-status";
 
 import { cn } from "@/lib/utils";
@@ -35,7 +37,10 @@ type CourseMeta = {
 };
 
 type CourseStudyViewProps = {
+  /** Content shown in tabs (preview slice or full). */
   course: CourseContent;
+  /** Full content for unlock totals and post-purchase. */
+  fullCourse?: CourseContent;
   meta: CourseMeta;
   canEdit?: boolean;
   hasEditedVersion?: boolean;
@@ -44,6 +49,12 @@ type CourseStudyViewProps = {
   publishSlotsUsed?: number;
   publishSlotsMax?: number;
   publishRejectionReason?: string | null;
+  currentPriceCents?: number | null;
+  hasFullAccess?: boolean;
+  isPaidPublic?: boolean;
+  priceCents?: number | null;
+  isSignedIn?: boolean;
+  purchaseSuccess?: boolean;
 };
 
 const DIFFICULTY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
@@ -60,6 +71,7 @@ const TABS: { id: StudyTab; label: string; icon: typeof BookOpen }[] = [
 
 export function CourseStudyView({
   course,
+  fullCourse,
   meta,
   canEdit = false,
   hasEditedVersion = false,
@@ -68,7 +80,15 @@ export function CourseStudyView({
   publishSlotsUsed = 0,
   publishSlotsMax = 0,
   publishRejectionReason = null,
+  currentPriceCents = null,
+  hasFullAccess = true,
+  isPaidPublic = false,
+  priceCents = null,
+  isSignedIn = false,
+  purchaseSuccess = false,
 }: CourseStudyViewProps) {
+  const totals = fullCourse ?? course;
+  const showPreviewGate = isPaidPublic && !hasFullAccess;
   const [activeTab, setActiveTab] = useState<StudyTab>("learn");
   const [masteredConcepts, setMasteredConcepts] = useState<Set<number>>(new Set());
   const [flashcardIndex, setFlashcardIndex] = useState(0);
@@ -131,8 +151,20 @@ export function CourseStudyView({
               </span>
             </div>
             <h1 className="text-2xl font-bold leading-snug tracking-tight sm:text-3xl">
-              {course.title}
+              {totals.title}
             </h1>
+            {isPaidPublic && priceCents != null && priceCents > 0 && (
+              <p className="mt-2 text-sm font-semibold text-indigo-700">
+                {hasFullAccess
+                  ? "You have full access"
+                  : `${formatPriceCents(priceCents)} · preview available`}
+              </p>
+            )}
+            {purchaseSuccess && hasFullAccess && (
+              <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+                Purchase complete — enjoy the full course!
+              </p>
+            )}
             <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground sm:line-clamp-none">
               {course.summary}
             </p>
@@ -190,10 +222,23 @@ export function CourseStudyView({
             publishSlotsUsed={publishSlotsUsed}
             publishSlotsMax={publishSlotsMax}
             rejectionReason={publishRejectionReason}
+            currentPriceCents={currentPriceCents}
           />
         </div>
       )}
 
+      {showPreviewGate && priceCents != null && (
+        <div className="mt-6">
+          <CourseUnlockPanel
+            slug={meta.slug}
+            priceCents={priceCents}
+            totalConcepts={totals.concepts.length}
+            totalFlashcards={totals.flashcards.length}
+            totalQuiz={totals.quiz.length}
+            isSignedIn={isSignedIn}
+          />
+        </div>
+      )}
 
       {/* Tab panels */}
       <div className="mt-6">
@@ -237,10 +282,11 @@ export function CourseStudyView({
           <QuizPanel
             initialQuestions={course.quiz}
             concepts={course.concepts}
-            courseTitle={course.title}
-            courseSummary={course.summary}
+            courseTitle={totals.title}
+            courseSummary={totals.summary}
             language={meta.language}
             difficulty={meta.difficulty}
+            previewMode={showPreviewGate}
           />
         )}
       </div>

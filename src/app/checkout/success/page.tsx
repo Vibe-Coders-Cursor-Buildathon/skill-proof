@@ -13,7 +13,11 @@ export const metadata = {
 };
 
 type SuccessPageProps = {
-  searchParams: Promise<{ session_id?: string; type?: string }>;
+  searchParams: Promise<{
+    session_id?: string;
+    type?: string;
+    course?: string;
+  }>;
 };
 
 export default async function CheckoutSuccessPage({
@@ -24,8 +28,9 @@ export default async function CheckoutSuccessPage({
     redirect("/?auth=signin");
   }
 
-  const { session_id: sessionId, type } = await searchParams;
+  const { session_id: sessionId, type, course: courseSlug } = await searchParams;
   const isCredits = type === "credits";
+  const isCourse = type === "course";
 
   let planMessage: string | null = null;
   let creditsPurchased: number | null = null;
@@ -34,9 +39,15 @@ export default async function CheckoutSuccessPage({
     try {
       const result = await confirmCheckoutSessionForUser(sessionId, user.id);
       if (result.fulfilled) {
+        if (result.checkoutType === "course") {
+          const slug = result.courseSlug ?? courseSlug;
+          if (slug) {
+            redirect(`/dashboard?tab=paid&purchased=${slug}`);
+          }
+        }
         if (result.checkoutType === "credits") {
           creditsPurchased = result.creditsGranted;
-        } else {
+        } else if (result.checkoutType === "plan") {
           const planName = getPricingPlan(result.planId).name;
           planMessage = result.alreadyFulfilled
             ? `Your ${planName} plan is active.`

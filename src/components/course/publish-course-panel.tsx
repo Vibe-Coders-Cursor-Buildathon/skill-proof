@@ -6,6 +6,12 @@ import { Globe, Loader2, Clock, CheckCircle2, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
+  MAX_COURSE_PRICE_CENTS,
+  MIN_COURSE_PRICE_CENTS,
+  parsePriceDollarsToCents,
+} from "@/config/course-pricing";
+import { formatPriceCents } from "@/config/pricing";
+import {
   publishStatusLabel,
   type PublishStatus,
 } from "@/lib/courses/publish-status";
@@ -17,6 +23,7 @@ type PublishCoursePanelProps = {
   publishSlotsUsed: number;
   publishSlotsMax: number;
   rejectionReason?: string | null;
+  currentPriceCents?: number | null;
 };
 
 export function PublishCoursePanel({
@@ -25,11 +32,15 @@ export function PublishCoursePanel({
   publishSlotsUsed,
   publishSlotsMax,
   rejectionReason,
+  currentPriceCents = null,
 }: PublishCoursePanelProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [priceDollars, setPriceDollars] = useState(
+    currentPriceCents != null ? (currentPriceCents / 100).toFixed(2) : "9.99",
+  );
 
   const slotsRemaining = Math.max(0, publishSlotsMax - publishSlotsUsed);
   const canSubmit =
@@ -39,16 +50,33 @@ export function PublishCoursePanel({
   const submitForReview = async () => {
     setError(null);
     setMessage(null);
+    const priceCents = parsePriceDollarsToCents(Number(priceDollars));
+    if (priceCents == null) {
+      setError(
+        `Enter a price between ${formatPriceCents(MIN_COURSE_PRICE_CENTS)} and ${formatPriceCents(MAX_COURSE_PRICE_CENTS)}.`,
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       const res = await fetch(`/api/courses/${slug}/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ price_cents: priceCents }),
       });
-      const data = (await res.json()) as { error?: string; message?: string };
+      const data = (await res.json()) as {
+        error?: string;
+        message?: string;
+        code?: string;
+      };
       if (!res.ok) {
-        throw new Error(data.error ?? "Failed to submit for review");
+        throw new Error(
+          data.code === "schema_outdated"
+            ? data.error ??
+                "Database update required — run Supabase migrations 00011 and 00012."
+            : data.error ?? "Failed to submit for review",
+        );
       }
       setMessage(
         data.message ??
@@ -93,10 +121,40 @@ export function PublishCoursePanel({
           <h3 className="font-bold text-foreground">Public catalog</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Submit this course for admin review to list it on the public
-            courses page. Your Business plan includes up to{" "}
+            courses page. Set a price — visitors get a free preview, then pay
+            to unlock all content. Your Business plan includes up to{" "}
             <strong>{publishSlotsMax}</strong> live or pending courses (
             {slotsRemaining} slot{slotsRemaining === 1 ? "" : "s"} left).
           </p>
+
+          {canSubmit && (
+            <label className="mt-4 block">
+              <span className="text-sm font-semibold">Course price (USD)</span>
+              <div className="mt-1.5 flex max-w-xs items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  $
+                </span>
+                <input
+                  type="number"
+                  min={MIN_COURSE_PRICE_CENTS / 100}
+                  max={MAX_COURSE_PRICE_CENTS / 100}
+                  step="0.01"
+                  value={priceDollars}
+                  onChange={(e) => setPriceDollars(e.target.value)}
+                  className="h-11 flex-1 rounded-xl border border-border/80 bg-white px-3 text-sm font-medium outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Learners preview 1 concept, 1 flashcard, and 1 quiz question.
+              </span>
+            </label>
+          )}
+
+          {currentPriceCents != null && !canSubmit && (
+            <p className="mt-3 text-sm font-semibold text-indigo-700">
+              Listed at {formatPriceCents(currentPriceCents)}
+            </p>
+          )}
 
           <StatusRow status={publishStatus} />
 

@@ -3,6 +3,8 @@ import { Layers } from "lucide-react";
 
 import { CourseCardThumbnail } from "@/components/courses/course-card-thumbnail";
 import { Badge } from "@/components/ui/badge";
+import { isPaidPublicCourse } from "@/config/course-pricing";
+import { formatPriceCents } from "@/config/pricing";
 import {
   formatCourseDate,
   getDifficultyLabel,
@@ -50,7 +52,13 @@ export function CourseCard({ course, className }: CourseCardProps) {
             <Layers className="size-3.5" />
             {course.conceptCount} concepts · {course.flashcardCount} cards
           </span>
-          <span>{formatCourseDate(course.createdAt)}</span>
+          {isPaidPublicCourse(course.priceCents) ? (
+            <span className="font-bold text-indigo-700">
+              {formatPriceCents(course.priceCents!)}
+            </span>
+          ) : (
+            <span>{formatCourseDate(course.createdAt)}</span>
+          )}
         </div>
       </div>
     </Link>

@@ -1,18 +1,19 @@
 -- Course publish approval: users request; admins approve before public catalog
 
 alter table courses
-  add column publish_status text not null default 'draft'
+  add column if not exists publish_status text not null default 'draft'
     check (publish_status in ('draft', 'pending', 'approved', 'rejected')),
-  add column publish_requested_at timestamptz,
-  add column publish_reviewed_at timestamptz,
-  add column publish_rejection_reason text;
+  add column if not exists publish_requested_at timestamptz,
+  add column if not exists publish_reviewed_at timestamptz,
+  add column if not exists publish_rejection_reason text;
 
 -- Backfill from legacy is_published flag
 update courses
 set publish_status = 'approved'
-where is_published = true;
+where is_published = true
+  and (publish_status is null or publish_status = 'draft');
 
-create index courses_publish_status_pending_idx
+create index if not exists courses_publish_status_pending_idx
   on courses (publish_status)
   where publish_status = 'pending';
 

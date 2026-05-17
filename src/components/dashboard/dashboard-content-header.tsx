@@ -10,7 +10,11 @@ const TAB_TITLES: Record<
   },
   courses: {
     title: "My Courses",
-    description: "All micro-courses in your library",
+    description: "Micro-courses you created with AI",
+  },
+  paid: {
+    title: "Paid Courses",
+    description: "Courses you purchased — full access anytime",
   },
   plan: {
     title: "Plan & Credits",

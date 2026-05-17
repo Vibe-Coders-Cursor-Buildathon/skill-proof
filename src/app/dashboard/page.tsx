@@ -7,6 +7,7 @@ import { getUser } from "@/lib/auth/session";
 import { getProfileWithPlan, userHasFeature } from "@/lib/auth/plan-guard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { fetchUserCourses } from "@/lib/courses/fetch-user-courses";
+import { fetchUserPurchasedCourses } from "@/lib/courses/fetch-user-purchased-courses";
 
 export const metadata = {
   title: "Dashboard | SkillProof",
@@ -54,7 +55,10 @@ export default async function DashboardPage() {
     "Learner";
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
-  const typedCourses = await fetchUserCourses(supabase, user.id);
+  const [typedCourses, purchasedCourses] = await Promise.all([
+    fetchUserCourses(supabase, user.id),
+    fetchUserPurchasedCourses(supabase, user.id),
+  ]);
   const canEditCourse = await userHasFeature(user.id, "can_edit_course");
 
   return (
@@ -68,6 +72,7 @@ export default async function DashboardPage() {
           credits={credits}
           creditsMax={creditsMax}
           courses={typedCourses}
+          purchasedCourses={purchasedCourses}
           canEditCourse={canEditCourse}
         />
       </Suspense>
