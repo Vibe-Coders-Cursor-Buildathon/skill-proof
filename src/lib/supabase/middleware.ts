@@ -55,16 +55,25 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && pathname.startsWith("/dashboard")) {
+  if (
+    user &&
+    (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))
+  ) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
 
-    if (profile?.role === "admin") {
+    if (profile?.role === "admin" && pathname.startsWith("/dashboard")) {
       const url = request.nextUrl.clone();
       url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
+
+    if (profile?.role !== "admin" && pathname.startsWith("/admin")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
   }

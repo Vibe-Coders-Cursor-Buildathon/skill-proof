@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { isPricingPlanId } from "@/config/pricing";
 import { useAuth } from "@/contexts/auth-context";
@@ -13,12 +13,16 @@ import { markWelcomeOnboarding } from "@/lib/auth/pending-upload";
 
 export function AuthQueryHandler() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading, openAuthModal } = useAuth();
 
   useEffect(() => {
     const auth = searchParams.get("auth");
     const redirect = searchParams.get("redirect");
+    const welcome =
+      searchParams.get("welcome") === "1" ||
+      searchParams.get("verified") === "1";
 
     if (redirect?.startsWith("/checkout")) {
       try {
@@ -42,8 +46,20 @@ export function AuthQueryHandler() {
 
     if (!isLoading && user && redirect) {
       router.replace(redirect);
+      return;
     }
-  }, [searchParams, openAuthModal, router, user, isLoading]);
+
+    if (
+      !isLoading &&
+      user &&
+      pathname === "/" &&
+      !auth &&
+      !redirect &&
+      !welcome
+    ) {
+      router.replace("/auth/after-login");
+    }
+  }, [searchParams, openAuthModal, router, user, isLoading, pathname]);
 
   useEffect(() => {
     const welcome =

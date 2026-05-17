@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, LogOut, Shield, Sparkles, User } from "lucide-react";
+import { ChevronDown, LogOut, Sparkles, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -47,26 +47,27 @@ export function HeaderAuth() {
     );
   }
 
+  const isAdmin = user.role === "admin";
   const credits = user.creditsBalance ?? 0;
   const hasLowCredits = credits === 0;
-  const dashboardHref = user.role === "admin" ? "/admin" : "/dashboard";
-
   return (
     <div className="flex items-center gap-2">
-      <div
-        className={cn(
-          "flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-semibold shadow-sm sm:px-3",
-          hasLowCredits
-            ? "border-amber-200 bg-amber-50 text-amber-800"
-            : "border-indigo-200 bg-indigo-50 text-indigo-800",
-        )}
-      >
-        <Sparkles className="size-3 shrink-0" />
-        <span>{credits}</span>
-        <span className="hidden sm:inline">
-          credit{credits !== 1 ? "s" : ""}
-        </span>
-      </div>
+      {!isAdmin && (
+        <div
+          className={cn(
+            "flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-semibold shadow-sm sm:px-3",
+            hasLowCredits
+              ? "border-amber-200 bg-amber-50 text-amber-800"
+              : "border-indigo-200 bg-indigo-50 text-indigo-800",
+          )}
+        >
+          <Sparkles className="size-3 shrink-0" />
+          <span>{credits}</span>
+          <span className="hidden sm:inline">
+            credit{credits !== 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
 
       <div ref={menuRef} className="relative">
         <button
@@ -92,17 +93,18 @@ export function HeaderAuth() {
         </button>
 
         {menuOpen && (
-            <div
-              role="menu"
-              className="absolute top-full right-0 z-[100] mt-2 w-56 overflow-hidden rounded-2xl border border-border/60 bg-white shadow-xl ring-1 ring-black/5"
-            >
-              <div className="border-b border-border/50 px-4 py-3">
-                <p className="truncate text-sm font-semibold text-foreground">
-                  {user.name}
-                </p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {user.email}
-                </p>
+          <div
+            role="menu"
+            className="absolute top-full right-0 z-[100] mt-2 w-56 overflow-hidden rounded-2xl border border-border/60 bg-white shadow-xl ring-1 ring-black/5"
+          >
+            <div className="border-b border-border/50 px-4 py-3">
+              <p className="truncate text-sm font-semibold text-foreground">
+                {user.name}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {user.email}
+              </p>
+              {!isAdmin && (
                 <div
                   className={cn(
                     "mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
@@ -114,35 +116,37 @@ export function HeaderAuth() {
                   <Sparkles className="size-3" />
                   {credits} credit{credits !== 1 ? "s" : ""}
                 </div>
-              </div>
+              )}
+            </div>
 
+            {!isAdmin && (
               <Link
-                href={dashboardHref}
+                href="/dashboard"
                 role="menuitem"
                 onClick={() => setMenuOpen(false)}
                 className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
               >
-                {user.role === "admin" ? (
-                  <Shield className="size-4 text-indigo-600" />
-                ) : (
-                  <User className="size-4" />
-                )}
-                {user.role === "admin" ? "Admin panel" : "Dashboard"}
+                <User className="size-4" />
+                Dashboard
               </Link>
+            )}
 
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setMenuOpen(false);
-                  void logout();
-                }}
-                className="flex w-full items-center gap-2.5 border-t border-border/50 px-4 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5"
-              >
-                <LogOut className="size-4" />
-                Sign out
-              </button>
-            </div>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                void logout();
+              }}
+              className={cn(
+                "flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5",
+                !isAdmin && "border-t border-border/50",
+              )}
+            >
+              <LogOut className="size-4" />
+              Sign out
+            </button>
+          </div>
         )}
       </div>
     </div>

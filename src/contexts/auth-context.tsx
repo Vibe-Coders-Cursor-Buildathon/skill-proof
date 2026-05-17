@@ -72,7 +72,6 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<AuthTab>("signin");
   const pendingCallback = useRef<(() => void) | undefined>(undefined);
-  const isFirstAuthEvent = useRef(true);
 
   const runPendingCallback = useCallback(() => {
     const cb = pendingCallback.current;
@@ -112,8 +111,7 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       await syncUserFromSession(session);
 
-      if (isFirstAuthEvent.current) {
-        isFirstAuthEvent.current = false;
+      if (event === "INITIAL_SESSION") {
         return;
       }
 
@@ -141,7 +139,6 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
       if (event === "SIGNED_OUT") {
         setUser(null);
         pendingCallback.current = undefined;
-        isFirstAuthEvent.current = true;
         router.refresh();
       }
     });
@@ -213,7 +210,6 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
     }
 
     setUser(null);
-    isFirstAuthEvent.current = true;
     router.push("/");
     router.refresh();
   }, [router]);
