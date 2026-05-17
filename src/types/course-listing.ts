@@ -20,6 +20,8 @@ export type CourseListing = {
   /** Cover image for catalog cards (e.g. Unsplash or stored URL) */
   thumbnailUrl?: string;
   thumbnailAlt?: string;
+  /** List price in USD cents; null = free */
+  priceCents?: number | null;
 };
 
 export type CourseSortOption = "latest" | "oldest" | "title-asc";

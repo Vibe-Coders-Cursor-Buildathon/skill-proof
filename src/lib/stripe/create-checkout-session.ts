@@ -114,3 +114,65 @@ export async function createStripeCreditsCheckoutSession({
 
   return session;
 }
+
+type CreateCourseCheckoutParams = {
+  userId: string;
+  userEmail: string;
+  courseId: string;
+  courseSlug: string;
+  courseTitle: string;
+  priceCents: number;
+  origin: string;
+};
+
+export async function createStripeCourseCheckoutSession({
+  userId,
+  userEmail,
+  courseId,
+  courseSlug,
+  courseTitle,
+  priceCents,
+  origin,
+}: CreateCourseCheckoutParams) {
+  const stripe = getStripe();
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer_email: userEmail,
+    client_reference_id: userId,
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "usd",
+          unit_amount: priceCents,
+          product_data: {
+            name: courseTitle,
+            description:
+              "Full access — all concepts, flashcards, and quizzes",
+            metadata: {
+              checkout_type: "course",
+              course_slug: courseSlug,
+            },
+          },
+        },
+      },
+    ],
+    metadata: {
+      user_id: userId,
+      checkout_type: "course",
+      course_id: courseId,
+      course_slug: courseSlug,
+      price_cents: String(priceCents),
+    },
+    success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&type=course&course=${courseSlug}`,
+    cancel_url: `${origin}/courses/${courseSlug}?canceled=1`,
+    allow_promotion_codes: true,
+  });
+
+  if (!session.url) {
+    throw new Error("Stripe did not return a checkout URL");
+  }
+
+  return session;
+}

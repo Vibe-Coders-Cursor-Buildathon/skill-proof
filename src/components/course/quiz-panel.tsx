@@ -28,6 +28,8 @@ type QuizPanelProps = {
   courseSummary: string;
   language: string;
   difficulty: string;
+  /** Disables adaptive rounds; single preview question only */
+  previewMode?: boolean;
 };
 
 type AnswerRecord = { index: number; selected: number };
@@ -39,6 +41,7 @@ export function QuizPanel({
   courseSummary,
   language,
   difficulty,
+  previewMode = false,
 }: QuizPanelProps) {
   const [round, setRound] = useState<"main" | "adaptive">("main");
   const [questions, setQuestions] = useState(initialQuestions);
@@ -153,7 +156,7 @@ export function QuizPanel({
   );
 
   useEffect(() => {
-    if (phase !== "main_results") return;
+    if (previewMode || phase !== "main_results") return;
     const mainAnswers = mainAnswersRef.current;
     if (mainAnswers.length === 0) return;
     if (weakAreas || weakAreasLoading || weakAreasError) return;
@@ -264,6 +267,19 @@ export function QuizPanel({
     mainAnswersRef.current,
     concepts,
   );
+
+  if (phase === "main_results" && previewMode) {
+    return (
+      <div className="glass-card mx-auto max-w-2xl p-8 text-center">
+        <Trophy className="mx-auto size-14 text-indigo-500" />
+        <h2 className="mt-4 text-xl font-bold">Preview complete</h2>
+        <p className="mt-3 text-sm text-muted-foreground">
+          You answered the sample quiz question. Purchase the course to unlock
+          all questions, adaptive practice, and weak-area lessons.
+        </p>
+      </div>
+    );
+  }
 
   if (phase === "main_results") {
     const needsRemedial = mainPercent < 60;

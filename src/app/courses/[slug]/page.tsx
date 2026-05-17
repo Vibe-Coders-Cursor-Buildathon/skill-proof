@@ -2,8 +2,11 @@ import { notFound } from "next/navigation";
 
 import { CourseStudyView } from "@/components/course/course-study-view";
 import { PageShell } from "@/components/layout/page-shell";
+import { buildPreviewContent } from "@/lib/courses/build-preview-content";
+import { resolveCourseAccess } from "@/lib/courses/course-access";
 import { getEffectiveCourseContent } from "@/lib/courses/get-effective-content";
 import { getUser } from "@/lib/auth/session";
+import { isAdmin } from "@/lib/auth/role-guard";
 import {
   getMaxPublishedCourses,
   userHasFeature,
@@ -16,12 +19,16 @@ export const dynamic = "force-dynamic";
 
 export default async function CourseSlugPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ purchased?: string }>;
 }) {
   const { slug } = await params;
+  const { purchased } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const user = await getUser();
+  const userIsAdmin = user ? await isAdmin(user.id) : false;
 
   const { data } = await supabase
     .from("courses")
@@ -34,7 +41,18 @@ export default async function CourseSlugPage({
   const effective = getEffectiveCourseContent(data.content, data.content_edited);
   if (!effective) notFound();
 
-  const isOwner = Boolean(user && data.user_id === user.id);
+  const access = await resolveCourseAccess({
+    supabase,
+    userId: user?.id ?? null,
+    course: data,
+    isAdmin: userIsAdmin,
+  });
+
+  const displayCourse = access.hasFullAccess
+    ? effective
+    : buildPreviewContent(effective);
+
+  const isOwner = access.isOwner;
   const canEdit =
     isOwner && user
       ? await userHasFeature(user.id, "can_edit_course")
@@ -55,7 +73,8 @@ export default async function CourseSlugPage({
   return (
     <PageShell wide>
       <CourseStudyView
-        course={effective}
+        course={displayCourse}
+        fullCourse={effective}
         meta={{
           slug: data.slug,
           difficulty: data.difficulty as string,
@@ -69,6 +88,12 @@ export default async function CourseSlugPage({
         publishSlotsUsed={publishSlotsUsed}
         publishSlotsMax={publishSlotsMax}
         publishRejectionReason={data.publish_rejection_reason}
+        currentPriceCents={data.price_cents}
+        hasFullAccess={access.hasFullAccess}
+        isPaidPublic={access.isPaidPublic}
+        priceCents={access.priceCents}
+        isSignedIn={Boolean(user)}
+        purchaseSuccess={purchased === "1"}
       />
     </PageShell>
   );

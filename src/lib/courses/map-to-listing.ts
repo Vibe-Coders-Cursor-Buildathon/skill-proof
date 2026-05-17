@@ -12,6 +12,7 @@ type CourseRow = {
   content_edited?: unknown | null;
   created_at: string;
   published_at?: string | null;
+  price_cents?: number | null;
   profiles?: { display_name: string | null } | null;
 };
 
@@ -42,5 +43,6 @@ export function mapCourseRowToListing(row: CourseRow): CourseListing | null {
     createdAt: row.published_at ?? row.created_at,
     author: row.profiles?.display_name ?? undefined,
     thumbnailHue: SOURCE_HUES[sourceType] ?? 275,
+    priceCents: row.price_cents ?? null,
   };
 }
