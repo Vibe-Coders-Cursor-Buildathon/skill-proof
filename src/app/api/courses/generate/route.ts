@@ -5,12 +5,17 @@ import { handleApiError, insufficientCredits, unauthorized } from "@/lib/api/err
 import { parseGenerateRequest } from "@/lib/api/parse-generate-request";
 import { extractContentForSource } from "@/lib/content/extract";
 import { isContentExtractionError } from "@/lib/content/errors";
+import { extractYouTubeVideoId } from "@/lib/content/youtube";
 import { generateCourseFromContent } from "@/lib/gemini/generate-course";
+import { generateCourseFromYouTubeVideo } from "@/lib/gemini/generate-course-from-youtube";
 import { getUser } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCreditBalance, spendCourseCredit } from "@/lib/auth/credits";
-import { courseContentSchema } from "@/types/course";
+import { courseContentSchema, type CourseContent } from "@/types/course";
 
+// Vercel Hobby plan caps function duration at 60s. Pro/Enterprise allow up to
+// 300s; bump this if you upgrade and YouTube videos longer than ~3-4 mins
+// regularly time out (Gemini video calls can run 30-90s).
 export const maxDuration = 60;
 
 const MAX_WAIT_SECS = 65;
@@ -77,14 +82,6 @@ function slugify(title: string, id: string): string {
   return `${base}-${id}`;
 }
 
-function isYouTubeExtractionMessage(message: string): boolean {
-  return (
-    message.includes("No captions") ||
-    message.includes("Caption file was empty") ||
-    message.includes("Invalid YouTube")
-  );
-}
-
 export async function POST(request: Request) {
   try {
     const user = await getUser();
@@ -112,28 +109,55 @@ export async function POST(request: Request) {
       return insufficientCredits();
     }
 
-    console.log("[generate] extracting content for:", sourceType);
-    const extracted = await extractContentForSource({
-      sourceType,
-      url,
-      file,
-      language,
-    });
+    let courseContent: CourseContent;
+    let sourceRef: string | undefined;
 
-    const { content, sourceRef } = extracted;
-    console.log("[generate] ✅ extracted words:", extracted.wordCount);
+    if (sourceType === "youtube") {
+      if (!url || !extractYouTubeVideoId(url)) {
+        return NextResponse.json(
+          { error: "Invalid YouTube URL. Use youtube.com/watch?v=... or youtu.be/..." },
+          { status: 422 },
+        );
+      }
 
-    if (!content.trim()) {
-      return NextResponse.json(
-        { error: "No content could be extracted from the source." },
-        { status: 422 },
+      console.log("[generate] calling Gemini directly with YouTube URL:", url);
+      sourceRef = url;
+      courseContent = await withGeminiRetry(() =>
+        generateCourseFromYouTubeVideo({ url, language, difficulty }),
+      );
+    } else {
+      console.log("[generate] extracting content for:", sourceType);
+      const extracted = await extractContentForSource({
+        sourceType,
+        url,
+        file,
+        language,
+      });
+
+      console.log("[generate] ✅ extracted words:", extracted.wordCount);
+
+      if (!extracted.content.trim()) {
+        return NextResponse.json(
+          { error: "No content could be extracted from the source." },
+          { status: 422 },
+        );
+      }
+
+      sourceRef = extracted.sourceRef;
+      console.log(
+        "[generate] calling Gemini... content length:",
+        extracted.content.length,
+        "chars",
+      );
+      courseContent = await withGeminiRetry(() =>
+        generateCourseFromContent({
+          content: extracted.content,
+          language,
+          difficulty,
+          sourceType,
+        }),
       );
     }
-
-    console.log("[generate] calling Gemini... content length:", content.length, "chars");
-    const courseContent = await withGeminiRetry(() =>
-      generateCourseFromContent({ content, language, difficulty, sourceType }),
-    );
 
     const validated = courseContentSchema.safeParse(courseContent);
     if (!validated.success) {
@@ -190,9 +214,6 @@ export async function POST(request: Request) {
     }
 
     const message = error instanceof Error ? error.message : "";
-    if (isYouTubeExtractionMessage(message)) {
-      return NextResponse.json({ error: message }, { status: 422 });
-    }
 
     if (message.includes("429") || message.includes("quota") || message.includes("Too Many Requests")) {
       const retryMatch = message.match(/retry in (\d+)/i);

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AdminNav } from "@/components/admin/admin-nav";
-import { AdminShell } from "@/components/layout/admin-shell";
+import { PageShell } from "@/components/layout/page-shell";
 import { getUser } from "@/lib/auth/session";
 import { isAdmin } from "@/lib/auth/role-guard";
 
@@ -25,7 +25,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <AdminShell>
+    <PageShell>
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight">Admin panel</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -34,6 +34,6 @@ export default async function AdminLayout({
       </div>
       <AdminNav />
       {children}
-    </AdminShell>
+    </PageShell>
   );
 }

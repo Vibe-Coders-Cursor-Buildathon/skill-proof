@@ -41,13 +41,6 @@ export function AuthQueryHandler() {
     }
 
     if (!isLoading && user && redirect) {
-      if (
-        user.role === "admin" &&
-        (redirect === "/" || redirect.startsWith("/dashboard"))
-      ) {
-        router.replace("/admin");
-        return;
-      }
       router.replace(redirect);
     }
   }, [searchParams, openAuthModal, router, user, isLoading]);

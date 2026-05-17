@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, Loader2, LogOut, Sparkles, User } from "lucide-react";
+import { ChevronDown, Loader2, LogOut, Shield, Sparkles, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -121,7 +121,17 @@ export function HeaderAuth() {
               )}
             </div>
 
-            {!isAdmin && (
+            {isAdmin ? (
+              <Link
+                href="/admin"
+                role="menuitem"
+                onClick={() => setMenuOpen(false)}
+                className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+              >
+                <Shield className="size-4" />
+                Admin panel
+              </Link>
+            ) : (
               <Link
                 href={dashboardHref}
                 role="menuitem"
@@ -142,8 +152,7 @@ export function HeaderAuth() {
                 void logout();
               }}
               className={cn(
-                "flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:opacity-60",
-                !isAdmin && "border-t border-border/50",
+                "flex w-full items-center gap-2.5 border-t border-border/50 px-4 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:opacity-60",
               )}
             >
               {isLoggingOut ? (
