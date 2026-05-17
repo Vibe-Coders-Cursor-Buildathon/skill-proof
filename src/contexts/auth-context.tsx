@@ -36,6 +36,7 @@ type AuthTab = "signin" | "signup";
 type AuthContextValue = {
   user: AuthUser | null;
   isLoading: boolean;
+  isLoggingOut: boolean;
   isAuthModalOpen: boolean;
   authModalTab: AuthTab;
   requireAuth: (onSuccess?: () => void) => void;
@@ -69,6 +70,8 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(initialUser);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const isLoggingOutRef = useRef(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<AuthTab>("signin");
   const pendingCallback = useRef<(() => void) | undefined>(undefined);
@@ -130,7 +133,7 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
         const redirectParam = new URL(window.location.href).searchParams.get(
           "redirect",
         );
-        if (redirectParam) {
+        if (redirectParam && redirectParam !== "/") {
           router.push(redirectParam);
         } else {
           router.push("/auth/after-login");
@@ -198,31 +201,33 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (isLoggingOutRef.current) return;
+    isLoggingOutRef.current = true;
+    setIsLoggingOut(true);
     setIsAuthModalOpen(false);
     pendingCallback.current = undefined;
-
-    try {
-      await signOutOnServer();
-    } catch {
-      // still clear client session below
-    }
-
-    const supabase = createSupabaseBrowserClient();
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
-
     setUser(null);
     isFirstAuthEvent.current = true;
-    router.push("/");
-    router.refresh();
-  }, [router]);
+
+    try {
+      const supabase = createSupabaseBrowserClient();
+      await Promise.all([
+        signOutOnServer(),
+        supabase ? supabase.auth.signOut() : Promise.resolve(),
+      ]);
+    } catch {
+      // still redirect so the user is not stuck on a protected page
+    }
+
+    window.location.assign("/");
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading,
+        isLoggingOut,
         isAuthModalOpen,
         authModalTab,
         requireAuth,
