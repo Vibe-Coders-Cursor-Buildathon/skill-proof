@@ -60,6 +60,20 @@ async function fetchProfileForUser(supabase: SupabaseClient, userId: string) {
   return data;
 }
 
+function authUsersEqual(a: AuthUser | null, b: AuthUser | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.id === b.id &&
+    a.email === b.email &&
+    a.name === b.name &&
+    a.avatarLetter === b.avatarLetter &&
+    a.creditsBalance === b.creditsBalance &&
+    a.planName === b.planName &&
+    a.role === b.role
+  );
+}
+
 type AuthProviderProps = {
   children: React.ReactNode;
   /** Hydrated from the server so the header shows the user immediately. */
@@ -98,6 +112,17 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
     const profile = await fetchProfileForUser(supabase, session.user.id);
     setUser(mapSessionToUser(session, profile));
   }, []);
+
+  // Keep client state in sync with the server-rendered `initialUser`. The root
+  // layout re-runs `getAuthUser()` on every navigation and `router.refresh()`,
+  // so this picks up server-side changes (Stripe webhooks, admin grants, plan
+  // resets, course generation, etc.) without a hard refresh. We skip `null`
+  // values to avoid logging the user out on transient cookie-less SSRs — sign
+  // out is handled by the supabase auth state listener below.
+  useEffect(() => {
+    if (!initialUser) return;
+    setUser((prev) => (authUsersEqual(prev, initialUser) ? prev : initialUser));
+  }, [initialUser]);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();

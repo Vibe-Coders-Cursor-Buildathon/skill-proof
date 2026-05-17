@@ -8,7 +8,7 @@ import {
 import { isPricingPlanId } from "@/config/pricing";
 import { isPaidPricingPlanId } from "@/config/stripe-plans";
 import { handleApiError, unauthorized } from "@/lib/api/errors";
-import { requireFeature } from "@/lib/auth/plan-guard";
+import { getProfileWithPlan, requireFeature } from "@/lib/auth/plan-guard";
 import { getUser } from "@/lib/auth/session";
 import { isPaidPublicCourse } from "@/config/course-pricing";
 import {
@@ -141,6 +141,20 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Invalid or unpaid plan" },
         { status: 400 },
+      );
+    }
+
+    // Block re-subscribing to the same plan.
+    const profileForPlan = await getProfileWithPlan(user.id);
+    const currentPlanSlug =
+      profileForPlan?.plan && typeof profileForPlan.plan === "object" &&
+      "slug" in profileForPlan.plan
+        ? String(profileForPlan.plan.slug)
+        : null;
+    if (currentPlanSlug && currentPlanSlug === planId) {
+      return NextResponse.json(
+        { error: "You're already subscribed to this plan." },
+        { status: 409 },
       );
     }
 
