@@ -11,6 +11,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import { CertificateQuizResult } from "@/components/certificate/certificate-quiz-result";
 import { WeakAreasCard } from "@/components/course/weak-areas-card";
 import { cn } from "@/lib/utils";
 import {
@@ -30,6 +31,9 @@ type QuizPanelProps = {
   difficulty: string;
   /** Disables adaptive rounds; single preview question only */
   previewMode?: boolean;
+  courseSlug?: string;
+  certificatesEnabled?: boolean;
+  isSignedIn?: boolean;
 };
 
 type AnswerRecord = { index: number; selected: number };
@@ -42,6 +46,9 @@ export function QuizPanel({
   language,
   difficulty,
   previewMode = false,
+  courseSlug,
+  certificatesEnabled = false,
+  isSignedIn = false,
 }: QuizPanelProps) {
   const [round, setRound] = useState<"main" | "adaptive">("main");
   const [questions, setQuestions] = useState(initialQuestions);
@@ -392,6 +399,14 @@ export function QuizPanel({
           </button>
         </div>
         </div>
+
+        {certificatesEnabled && courseSlug && (
+          <CertificateQuizResult
+            courseSlug={courseSlug}
+            quizScorePercent={mainPercent}
+            isSignedIn={isSignedIn}
+          />
+        )}
 
         {(mainWrongConcepts.length > 0 || weakAreasLoading) && (
           <WeakAreasCard

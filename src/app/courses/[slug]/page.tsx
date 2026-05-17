@@ -11,6 +11,7 @@ import {
   getMaxPublishedCourses,
   userHasFeature,
 } from "@/lib/auth/plan-guard";
+import { getCourseCertificateConfig } from "@/lib/certificates/course-certificate-config";
 import { countPublishSlotsUsed } from "@/lib/courses/publish-limits";
 import type { PublishStatus } from "@/lib/courses/publish-status";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -70,6 +71,16 @@ export default async function CourseSlugPage({
     publishSlotsUsed = await countPublishSlotsUsed(supabase, user.id);
   }
 
+  const certConfig = await getCourseCertificateConfig(
+    supabase,
+    data.id,
+    data.slug,
+    effective.title,
+    data.certificates_enabled === true,
+    data.user_id,
+  );
+  const certificatesEnabled = Boolean(certConfig?.enabled);
+
   return (
     <PageShell wide>
       <CourseStudyView
@@ -94,6 +105,7 @@ export default async function CourseSlugPage({
         priceCents={access.priceCents}
         isSignedIn={Boolean(user)}
         purchaseSuccess={purchased === "1"}
+        certificatesEnabled={certificatesEnabled}
       />
     </PageShell>
   );

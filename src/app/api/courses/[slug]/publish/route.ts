@@ -151,6 +151,7 @@ export async function POST(request: Request, context: RouteContext) {
       is_published: false,
       published_at: null,
       price_cents: parsed.data.price_cents,
+      certificates_enabled: true,
     };
 
     if (parsed.data.university_stamp) {

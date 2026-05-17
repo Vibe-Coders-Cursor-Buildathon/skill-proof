@@ -55,6 +55,7 @@ type CourseStudyViewProps = {
   priceCents?: number | null;
   isSignedIn?: boolean;
   purchaseSuccess?: boolean;
+  certificatesEnabled?: boolean;
 };
 
 const DIFFICULTY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
@@ -86,6 +87,7 @@ export function CourseStudyView({
   priceCents = null,
   isSignedIn = false,
   purchaseSuccess = false,
+  certificatesEnabled = false,
 }: CourseStudyViewProps) {
   const totals = fullCourse ?? course;
   const showPreviewGate = isPaidPublic && !hasFullAccess;
@@ -287,6 +289,9 @@ export function CourseStudyView({
             language={meta.language}
             difficulty={meta.difficulty}
             previewMode={showPreviewGate}
+            courseSlug={meta.slug}
+            certificatesEnabled={certificatesEnabled && !showPreviewGate}
+            isSignedIn={isSignedIn}
           />
         )}
       </div>

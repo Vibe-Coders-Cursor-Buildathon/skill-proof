@@ -49,6 +49,7 @@ export async function PATCH(request: Request, context: RouteContext) {
           published_at: now,
           publish_reviewed_at: now,
           publish_rejection_reason: null,
+          certificates_enabled: true,
         };
         break;
       case "reject":

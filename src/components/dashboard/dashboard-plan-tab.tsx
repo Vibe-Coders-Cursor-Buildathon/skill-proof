@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { ArrowRight, Check, Crown, Sparkles } from "lucide-react";
 
 import { BuyCreditsSection } from "@/components/dashboard/buy-credits-section";
+import { CertificateBrandingSection } from "@/components/dashboard/certificate-branding-section";
 import { CreditsPurchaseSuccess } from "@/components/dashboard/credits-purchase-success";
 import { PRICING_PLANS } from "@/config/pricing";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,8 @@ export function DashboardPlanTab({
       </Suspense>
 
       <BuyCreditsSection />
+
+      <CertificateBrandingSection />
 
       <div
         className={cn(
