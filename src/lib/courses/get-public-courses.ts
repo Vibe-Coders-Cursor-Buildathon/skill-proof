@@ -11,7 +11,6 @@ export async function getPublicCourses(limit?: number): Promise<CourseListing[]>
       "id, slug, title, source_type, language, difficulty, content, content_edited, created_at, published_at, profiles(display_name)",
     )
     .eq("is_published", true)
-    .eq("publish_status", "approved")
     .order("published_at", { ascending: false, nullsFirst: false });
 
   if (limit != null) {
@@ -21,6 +20,13 @@ export async function getPublicCourses(limit?: number): Promise<CourseListing[]>
   const { data, error } = await query;
 
   if (error) {
+    // Column missing before migration 00011 — show empty catalog instead of crashing
+    if (error.code === "42703") {
+      console.warn(
+        "[getPublicCourses] Schema missing publish columns — run supabase/migrations/00011_publish_approval.sql",
+      );
+      return [];
+    }
     throw error;
   }
 

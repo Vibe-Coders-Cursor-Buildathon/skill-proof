@@ -6,7 +6,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { getUser } from "@/lib/auth/session";
 import { getProfileWithPlan, userHasFeature } from "@/lib/auth/plan-guard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { CourseRecord } from "@/types/course";
+import { fetchUserCourses } from "@/lib/courses/fetch-user-courses";
 
 export const metadata = {
   title: "Dashboard | SkillProof",
@@ -54,16 +54,7 @@ export default async function DashboardPage() {
     "Learner";
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
-  const { data: courses } = await supabase
-    .from("courses")
-    .select(
-      "id, slug, title, source_type, difficulty, language, created_at, content, publish_status, is_published",
-    )
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  const typedCourses = (courses ?? []) as CourseRecord[];
+  const typedCourses = await fetchUserCourses(supabase, user.id);
   const canEditCourse = await userHasFeature(user.id, "can_edit_course");
 
   return (
