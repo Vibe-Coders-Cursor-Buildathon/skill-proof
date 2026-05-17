@@ -6,15 +6,28 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { DashboardContentHeader } from "@/components/dashboard/dashboard-content-header";
 import { DashboardCoursesSection } from "@/components/dashboard/dashboard-courses-section";
 import { DashboardOverviewTab } from "@/components/dashboard/dashboard-overview-tab";
+import { DashboardCertificatesSection } from "@/components/dashboard/dashboard-certificates-section";
 import { DashboardPaidCoursesSection } from "@/components/dashboard/dashboard-paid-courses-section";
 import { DashboardPlanTab } from "@/components/dashboard/dashboard-plan-tab";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import type { CourseRecord } from "@/types/course";
 import type { PurchasedCourse } from "@/types/purchased-course";
+import type { UserCertificate } from "@/types/user-certificate";
 
-export type DashboardTabId = "overview" | "courses" | "paid" | "plan";
+export type DashboardTabId =
+  | "overview"
+  | "courses"
+  | "paid"
+  | "certificates"
+  | "plan";
 
-const TAB_IDS: DashboardTabId[] = ["overview", "courses", "paid", "plan"];
+const TAB_IDS: DashboardTabId[] = [
+  "overview",
+  "courses",
+  "paid",
+  "certificates",
+  "plan",
+];
 
 type DashboardTabsProps = {
   displayName: string;
@@ -25,6 +38,7 @@ type DashboardTabsProps = {
   creditsMax: number;
   courses: CourseRecord[];
   purchasedCourses: PurchasedCourse[];
+  certificates: UserCertificate[];
   canEditCourse?: boolean;
 };
 
@@ -37,6 +51,7 @@ export function DashboardTabs({
   creditsMax,
   courses,
   purchasedCourses,
+  certificates,
   canEditCourse = false,
 }: DashboardTabsProps) {
   const router = useRouter();
@@ -79,6 +94,7 @@ export function DashboardTabs({
           credits={credits}
           courseCount={courses.length}
           paidCourseCount={purchasedCourses.length}
+          certificateCount={certificates.length}
         />
 
         <main className="min-w-0 flex-1">
@@ -106,6 +122,10 @@ export function DashboardTabs({
 
           {activeTab === "paid" && (
             <DashboardPaidCoursesSection purchasedCourses={purchasedCourses} />
+          )}
+
+          {activeTab === "certificates" && (
+            <DashboardCertificatesSection certificates={certificates} />
           )}
 
           {activeTab === "plan" && (

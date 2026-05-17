@@ -7,6 +7,7 @@ import { getUser } from "@/lib/auth/session";
 import { getProfileWithPlan, userHasFeature } from "@/lib/auth/plan-guard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { fetchUserCourses } from "@/lib/courses/fetch-user-courses";
+import { fetchUserCertificates } from "@/lib/certificates/fetch-user-certificates";
 import { fetchUserPurchasedCourses } from "@/lib/courses/fetch-user-purchased-courses";
 
 export const metadata = {
@@ -55,9 +56,10 @@ export default async function DashboardPage() {
     "Learner";
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
-  const [typedCourses, purchasedCourses] = await Promise.all([
+  const [typedCourses, purchasedCourses, certificates] = await Promise.all([
     fetchUserCourses(supabase, user.id),
     fetchUserPurchasedCourses(supabase, user.id),
+    fetchUserCertificates(supabase, user.id),
   ]);
   const canEditCourse = await userHasFeature(user.id, "can_edit_course");
 
@@ -73,6 +75,7 @@ export default async function DashboardPage() {
           creditsMax={creditsMax}
           courses={typedCourses}
           purchasedCourses={purchasedCourses}
+          certificates={certificates}
           canEditCourse={canEditCourse}
         />
       </Suspense>

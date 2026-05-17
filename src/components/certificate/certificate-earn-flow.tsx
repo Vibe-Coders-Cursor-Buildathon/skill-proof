@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Award, Loader2 } from "lucide-react";
 
@@ -145,7 +146,18 @@ export function CertificateEarnFlow({
               <p className="font-semibold text-violet-950">Course certificate</p>
               <p className="mt-1 text-sm text-violet-900/80">
                 {certificate
-                  ? "Your certificate is ready — view, download, or share on LinkedIn."
+                  ? (
+                      <>
+                        Your certificate is ready — also find it anytime under{" "}
+                        <Link
+                          href="/dashboard?tab=certificates"
+                          className="font-semibold text-violet-800 underline"
+                        >
+                          Dashboard → Certificates
+                        </Link>
+                        .
+                      </>
+                    )
                   : canClaim
                     ? "You qualify! Generating your certificate…"
                     : `Progress ${courseProgressPercent}% · pass the quiz (${CERTIFICATE_PASS_PERCENT}%+) and complete more than ${CERTIFICATE_MIN_COURSE_PROGRESS_PERCENT}% to unlock.`}

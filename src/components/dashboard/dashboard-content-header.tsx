@@ -16,6 +16,10 @@ const TAB_TITLES: Record<
     title: "Paid Courses",
     description: "Courses you purchased — full access anytime",
   },
+  certificates: {
+    title: "My Certificates",
+    description: "Download certificates and share your achievements on LinkedIn",
+  },
   plan: {
     title: "Plan & Credits",
     description: "Manage your subscription and credit usage",

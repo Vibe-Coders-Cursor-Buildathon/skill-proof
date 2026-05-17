@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  Award,
   BookOpen,
   CreditCard,
   LayoutDashboard,
@@ -30,6 +31,18 @@ const NAV_ITEMS: {
     description: "Your course library",
   },
   {
+    id: "paid",
+    label: "Paid Courses",
+    icon: ShoppingBag,
+    description: "Purchased catalog courses",
+  },
+  {
+    id: "certificates",
+    label: "Certificates",
+    icon: Award,
+    description: "Earned credentials & LinkedIn",
+  },
+  {
     id: "plan",
     label: "Plan & Credits",
     icon: CreditCard,
@@ -47,6 +60,7 @@ type DashboardSidebarProps = {
   credits: number;
   courseCount: number;
   paidCourseCount: number;
+  certificateCount: number;
 };
 
 export function DashboardSidebar({
@@ -59,6 +73,7 @@ export function DashboardSidebar({
   credits,
   courseCount,
   paidCourseCount,
+  certificateCount,
 }: DashboardSidebarProps) {
   const firstName = displayName.split(" ")[0] ?? displayName;
   const lowCredits = credits <= 1;
@@ -108,7 +123,9 @@ export function DashboardSidebar({
                 ? courseCount
                 : item.id === "paid" && paidCourseCount > 0
                   ? paidCourseCount
-                  : item.id === "plan" && lowCredits
+                  : item.id === "certificates" && certificateCount > 0
+                    ? certificateCount
+                    : item.id === "plan" && lowCredits
                   ? "!"
                   : undefined;
 
