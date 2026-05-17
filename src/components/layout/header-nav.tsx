@@ -42,7 +42,10 @@ export function HeaderNav() {
   const hash = useHash();
 
   return (
-    <nav className="hidden items-center gap-1 md:flex">
+    <nav
+      aria-label="Primary"
+      className="hidden items-center gap-1 rounded-full border border-white/70 bg-white/60 p-1 shadow-sm shadow-indigo-500/5 backdrop-blur-md md:flex"
+    >
       {MAIN_NAV_LINKS.map((link) => {
         const active = isLinkActive(link, pathname, hash);
         return (
@@ -50,10 +53,10 @@ export function HeaderNav() {
             key={link.href}
             href={link.href}
             className={cn(
-              "rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
+              "relative rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200",
               active
                 ? "bg-gradient-to-r from-indigo-600 to-violet-600 font-semibold text-white shadow-md shadow-indigo-500/30"
-                : "text-muted-foreground hover:bg-indigo-50 hover:text-indigo-700",
+                : "text-muted-foreground hover:bg-indigo-50/80 hover:text-indigo-700",
             )}
             aria-current={active ? "page" : undefined}
           >
